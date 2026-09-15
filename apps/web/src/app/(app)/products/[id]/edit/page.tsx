@@ -289,16 +289,16 @@ export default function ProductEditPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="SKU" error={errors.sku?.message}>
+                <FormField id="sku" label="SKU" error={errors.sku?.message}>
                   <Input {...register('sku')} placeholder="Ex: CAM-PRE-M" className="font-mono" />
                 </FormField>
-                <FormField label="EAN / GTIN" error={errors.barcode?.message}>
+                <FormField id="barcode" label="EAN / GTIN" error={errors.barcode?.message}>
                   <Input {...register('barcode')} placeholder="0000000000000" className="font-mono" />
                 </FormField>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="Categoria" error={errors.category_id?.message}>
+                <FormField id="category_id" label="Categoria" error={errors.category_id?.message}>
                   <Select value={categoryId} onValueChange={(v) => setValue('category_id', v)}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
@@ -308,7 +308,7 @@ export default function ProductEditPage() {
                     </SelectContent>
                   </Select>
                 </FormField>
-                <FormField label="Marca">
+                <FormField id="brand_id" label="Marca">
                   <Select value={brandId ?? ''} onValueChange={(v) => setValue('brand_id', v)}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
@@ -322,7 +322,7 @@ export default function ProductEditPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="Unidade" error={errors.unit?.message}>
+                <FormField id="unit" label="Unidade" error={errors.unit?.message}>
                   <Select value={unit} onValueChange={(v) => setValue('unit', v as ProductFormValues['unit'])}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -330,7 +330,7 @@ export default function ProductEditPage() {
                     </SelectContent>
                   </Select>
                 </FormField>
-                <FormField label="Tipo" error={undefined}>
+                <FormField id="type" label="Tipo" error={undefined}>
                   <Input placeholder="Produto acabado" disabled className="bg-muted/40" />
                 </FormField>
               </div>
@@ -347,7 +347,7 @@ export default function ProductEditPage() {
                     <p className="text-xs text-muted-foreground italic">Nenhum NCM na categoria selecionada</p>
                   )}
                 </div>
-                <FormField label="NCM específico do produto (opcional)" error={errors.ncm?.message}
+                <FormField id="ncm" label="NCM específico do produto (opcional)" error={errors.ncm?.message}
                   hint="Preencha apenas se este produto tiver NCM diferente da categoria">
                   <Input
                     placeholder={inheritedNcm ? `Padrão: ${inheritedNcm}` : "Ex: 61091000"}
@@ -369,14 +369,14 @@ export default function ProductEditPage() {
           {activeTab === 'prices' && (
             <div className="flex flex-col gap-5 max-w-2xl">
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="Custo" error={errors.cost_price?.message}>
+                <FormField id="cost_price" label="Custo" error={errors.cost_price?.message}>
                   <CurrencyInput value={watch('cost_price')} onChange={(v) => setValue('cost_price', v)} placeholder="R$ 0,00" />
                 </FormField>
-                <FormField label="Preço de venda" error={errors.sale_price?.message}>
+                <FormField id="sale_price" label="Preço de venda" error={errors.sale_price?.message}>
                   <CurrencyInput value={watch('sale_price')} onChange={(v) => setValue('sale_price', v)} placeholder="R$ 0,00" />
                 </FormField>
               </div>
-              <FormField label="Preço mínimo" error={errors.min_price?.message}>
+              <FormField id="min_price" label="Preço mínimo" error={errors.min_price?.message}>
                 <CurrencyInput value={watch('min_price')} onChange={(v) => setValue('min_price', v)} placeholder="R$ 0,00 (opcional)" />
               </FormField>
             </div>
@@ -386,10 +386,10 @@ export default function ProductEditPage() {
           {activeTab === 'stock' && (
             <div className="flex flex-col gap-5 max-w-2xl">
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="Estoque mínimo" error={errors.min_stock?.message}>
+                <FormField id="min_stock" label="Estoque mínimo" error={errors.min_stock?.message}>
                   <QuantityInput value={watch('min_stock')} onChange={(v) => setValue('min_stock', v)} />
                 </FormField>
-                <FormField label="Estoque máximo" error={errors.max_stock?.message}>
+                <FormField id="max_stock" label="Estoque máximo" error={errors.max_stock?.message}>
                   <QuantityInput value={watch('max_stock')} onChange={(v) => setValue('max_stock', v)} placeholder="Sem limite" />
                 </FormField>
               </div>
@@ -415,7 +415,7 @@ export default function ProductEditPage() {
           {/* TAB: Descrição */}
           {activeTab === 'description' && (
             <div className="flex flex-col gap-5 max-w-2xl">
-              <FormField label="Descrição" error={errors.description?.message}>
+              <FormField id="description" label="Descrição" error={errors.description?.message}>
                 <Textarea {...register('description')} placeholder="Descreva o produto, materiais, características..." rows={6} />
               </FormField>
             </div>
