@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     // Registrar evento idempotente
     const eventKey = `${result.event}_${result.chargeId ?? Date.now()}`
-    await supabase.from('billing_events').insert({
+    await (supabase as any).from('billing_events').insert({
       provider: 'asaas',
       event_id: eventKey,
       event_type: result.event,
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       }
       const newStatus = statusMap[result.status]
       if (newStatus) {
-        await supabase
+        await (supabase as any)
           .from('financial_transactions')
           .update({
             status: newStatus,
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await supabase.from('billing_events')
+    await (supabase as any).from('billing_events')
       .update({ status: 'processed', processed_at: new Date().toISOString() })
       .eq('event_id', eventKey)
       .eq('provider', 'asaas')
