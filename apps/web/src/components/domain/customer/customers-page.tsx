@@ -113,8 +113,8 @@ export function CustomersPage() {
         state: values.state || null, notes: values.notes || null, is_active: true,
       }
       const r = editing
-        ? await updateCustomer(editing.id, { ...payload, state_registration: '', whatsapp: '' })
-        : await createCustomer({ ...payload, state_registration: '', whatsapp: '' })
+        ? await updateCustomer(editing.id, payload)
+        : await createCustomer(payload)
       if (!r.success) { toast.error(r.error ?? 'Erro ao salvar'); return }
       toast.success(editing ? 'Cliente atualizado' : 'Cliente cadastrado')
       setFormOpen(false)
