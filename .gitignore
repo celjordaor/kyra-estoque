@@ -1,0 +1,56 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# build outputs
+.next
+dist
+.turbo
+out
+
+# environment
+.env
+.env.local
+.env.*.local
+.env.production
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase
+supabase/.branches
+supabase/.temp
+
+# debug
+*.log
+npm-debug.log*
+
+# ── Adições críticas para este projeto ────────────────────────
+
+# Certificados digitais — NF-e / assinatura (NUNCA no git)
+*.pem
+*.pfx
+*.p12
+*.cer
+*.crt
+*.key
+certs/
+
+# Cache Next.js / SWC
+.swc/
+.next/cache/
+
+# Testes
+coverage/
+playwright-report/
+test-results/
+*.snap
+
+# Vercel (gerado localmente pelo CLI)
+.vercel/

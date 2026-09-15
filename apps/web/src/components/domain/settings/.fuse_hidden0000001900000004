@@ -1,0 +1,314 @@
+'use client'
+
+import * as React from 'react'
+import { Plus, Pencil, Trash2, Search, X, Circle } from 'lucide-react'
+import { toast } from 'sonner'
+import { PageHeader } from '@/components/layout/page-header'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { FormField } from '@/components/ui/form-field'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DataTable } from '@/components/composite/data-table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
+import { getCategoriesAdmin, createCategory, updateCategory, deleteCategory } from '@/lib/actions/categories'
+import { getBrands, createBrand, updateBrand, deleteBrand } from '@/lib/actions/brands'
+import type { CategoryRow, BrandRow } from '@kyra/database'
+
+type Tab = 'categories' | 'brands' | 'company'
+
+const CATEGORY_COLORS = [
+  { value: '#0D9488', label: 'Teal' },
+  { value: '#3B82F6', label: 'Azul' },
+  { value: '#8B5CF6', label: 'Roxo' },
+  { value: '#EC4899', label: 'Rosa' },
+  { value: '#F59E0B', label: 'Amarelo' },
+  { value: '#10B981', label: 'Verde' },
+  { value: '#EF4444', label: 'Vermelho' },
+  { value: '#6B7280', label: 'Cinza' },
+]
+
+// ── Category CRUD ─────────────────────────────────────────────
+function CategoriesTab() {
+  const [items, setItems] = React.useState<CategoryRow[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [search, setSearch] = React.useState('')
+  const [debouncedSearch, setDebouncedSearch] = React.useState('')
+  const [formOpen, setFormOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+  const [editing, setEditing] = React.useState<CategoryRow | null>(null)
+  const [name, setName] = React.useState('')
+  const [description, setDescription] = React.useState('')
+  const [color, setColor] = React.useState(CATEGORY_COLORS[0].value)
+  const [deleteTarget, setDeleteTarget] = React.useState<CategoryRow | null>(null)
+  const [deleteLoading, setDeleteLoading] = React.useState(false)
+
+  React.useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 350); return () => clearTimeout(t) }, [search])
+
+  const fetch = React.useCallback(async () => {
+    setLoading(true)
+    try { const r = await getCategoriesAdmin({ search: debouncedSearch || undefined, status: 'all' }); setItems(r.data) }
+    catch { toast.error('Erro ao carregar categorias') }
+    finally { setLoading(false) }
+  }, [debouncedSearch])
+
+  React.useEffect(() => { fetch() }, [fetch])
+
+  function openNew() { setEditing(null); setName(''); setDescription(''); setColor(CATEGORY_COLORS[0].value); setFormOpen(true) }
+  function openEdit(c: CategoryRow) {
+    setEditing(c); setName(c.name); setDescription(c.description ?? ''); setColor(c.color ?? CATEGORY_COLORS[0].value); setFormOpen(true)
+  }
+
+  async function handleSave() {
+    if (!name.trim()) { toast.error('Nome é obrigatório'); return }
+    setSaving(true)
+    try {
+      const r = editing
+        ? await updateCategory(editing.id, { name, description: description || undefined, color })
+        : await createCategory({ name, description: description || undefined, color })
+      if (!r.success) { toast.error(r.error ?? 'Erro ao salvar'); return }
+      toast.success(editing ? 'Categoria atualizada' : 'Categoria criada')
+      setFormOpen(false); fetch()
+    } finally { setSaving(false) }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    const r = await deleteCategory(deleteTarget.id)
+    setDeleteLoading(false)
+    if (!r.success) { toast.error(r.error ?? 'Erro'); return }
+    toast.success('Categoria removida'); setDeleteTarget(null); fetch()
+  }
+
+  type CatCol = { key: string; header: string; cell: (row: CategoryRow) => React.ReactNode; className?: string }
+  const columns: CatCol[] = [
+    {
+      key: 'name', header: 'Categoria',
+      cell: (c) => (
+        <div className="flex items-center gap-3">
+          <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: c.color ?? '#6B7280' }} />
+          <span className="font-medium text-sm">{c.name}</span>
+        </div>
+      )
+    },
+    { key: 'description', header: 'Descrição', className: 'hidden md:table-cell', cell: (c) => <span className="text-sm text-muted-foreground">{c.description ?? '—'}</span> },
+    { key: 'is_active', header: 'Status', cell: (c) => <Badge variant={c.is_active ? 'default' : 'secondary'}>{c.is_active ? 'Ativa' : 'Inativa'}</Badge> },
+    {
+      key: 'actions', header: '',
+      cell: (c) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(c)}><Trash2 className="h-4 w-4" /></Button>
+        </div>
+      )
+    },
+  ]
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Buscar categorias..." value={search} onChange={e => setSearch(e.target.value)} />
+          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
+        </div>
+        <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" />Nova categoria</Button>
+      </div>
+
+      <DataTable columns={columns} data={items} loading={loading} keyExtractor={c => c.id}
+        emptyTitle="Nenhuma categoria cadastrada"
+        emptyDescription="Crie categorias para organizar seus produtos"
+        emptyAction={{ label: "Nova categoria", onClick: openNew }}
+      />
+
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{editing ? 'Editar categoria' : 'Nova categoria'}</DialogTitle></DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <FormField label="Nome">
+              <Input placeholder="Nome da categoria" value={name} onChange={e => setName(e.target.value)} />
+            </FormField>
+            <FormField label="Descrição">
+              <Input placeholder="Descrição opcional" value={description} onChange={e => setDescription(e.target.value)} />
+            </FormField>
+            <FormField label="Cor">
+              <div className="flex flex-wrap gap-2 pt-1">
+                {CATEGORY_COLORS.map(c => (
+                  <button key={c.value} type="button" onClick={() => setColor(c.value)}
+                    className={cn('h-7 w-7 rounded-full border-2 transition-all', color === c.value ? 'border-foreground scale-110' : 'border-transparent')}
+                    style={{ backgroundColor: c.value }} title={c.label} />
+                ))}
+              </div>
+            </FormField>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : editing ? 'Salvar' : 'Criar categoria'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}
+        title="Remover categoria"
+        description={`Deseja remover a categoria "${deleteTarget?.name}"? Produtos associados ficarão sem categoria.`}
+        confirmLabel="Remover" onConfirm={handleDelete} loading={deleteLoading} variant="danger"
+      />
+    </div>
+  )
+}
+
+// ── Brands CRUD ───────────────────────────────────────────────
+function BrandsTab() {
+  const [items, setItems] = React.useState<BrandRow[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [search, setSearch] = React.useState('')
+  const [debouncedSearch, setDebouncedSearch] = React.useState('')
+  const [formOpen, setFormOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+  const [editing, setEditing] = React.useState<BrandRow | null>(null)
+  const [name, setName] = React.useState('')
+  const [description, setDescription] = React.useState('')
+  const [deleteTarget, setDeleteTarget] = React.useState<BrandRow | null>(null)
+  const [deleteLoading, setDeleteLoading] = React.useState(false)
+
+  React.useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 350); return () => clearTimeout(t) }, [search])
+
+  const fetch = React.useCallback(async () => {
+    setLoading(true)
+    try { const r = await getBrands({ search: debouncedSearch || undefined, status: 'all' }); setItems(r.data) }
+    catch { toast.error('Erro ao carregar marcas') }
+    finally { setLoading(false) }
+  }, [debouncedSearch])
+
+  React.useEffect(() => { fetch() }, [fetch])
+
+  function openNew() { setEditing(null); setName(''); setDescription(''); setFormOpen(true) }
+  function openEdit(b: BrandRow) { setEditing(b); setName(b.name); setDescription(b.description ?? ''); setFormOpen(true) }
+
+  async function handleSave() {
+    if (!name.trim()) { toast.error('Nome é obrigatório'); return }
+    setSaving(true)
+    try {
+      const r = editing
+        ? await updateBrand(editing.id, { name, description: description || undefined })
+        : await createBrand({ name, description: description || undefined })
+      if (!r.success) { toast.error(r.error ?? 'Erro ao salvar'); return }
+      toast.success(editing ? 'Marca atualizada' : 'Marca criada')
+      setFormOpen(false); fetch()
+    } finally { setSaving(false) }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    const r = await deleteBrand(deleteTarget.id)
+    setDeleteLoading(false)
+    if (!r.success) { toast.error(r.error ?? 'Erro'); return }
+    toast.success('Marca removida'); setDeleteTarget(null); fetch()
+  }
+
+  type BrandCol = { key: string; header: string; cell: (row: BrandRow) => React.ReactNode; className?: string }
+  const columns: BrandCol[] = [
+    { key: 'name', header: 'Marca', cell: (b) => <span className="font-medium text-sm">{b.name}</span> },
+    { key: 'description', header: 'Descrição', className: 'hidden md:table-cell', cell: (b) => <span className="text-sm text-muted-foreground">{b.description ?? '—'}</span> },
+    { key: 'is_active', header: 'Status', cell: (b) => <Badge variant={b.is_active ? 'default' : 'secondary'}>{b.is_active ? 'Ativa' : 'Inativa'}</Badge> },
+    {
+      key: 'actions', header: '',
+      cell: (b) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(b)}><Pencil className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(b)}><Trash2 className="h-4 w-4" /></Button>
+        </div>
+      )
+    },
+  ]
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Buscar marcas..." value={search} onChange={e => setSearch(e.target.value)} />
+          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
+        </div>
+        <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" />Nova marca</Button>
+      </div>
+
+      <DataTable columns={columns} data={items} loading={loading} keyExtractor={b => b.id}
+        emptyTitle="Nenhuma marca cadastrada"
+        emptyDescription="Crie marcas para organizar seus produtos"
+        emptyAction={<Button onClick={openNew}><Plus className="mr-2 h-4 w-4" />Nova marca</Button>}
+      />
+
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{editing ? 'Editar marca' : 'Nova marca'}</DialogTitle></DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <FormField label="Nome">
+              <Input placeholder="Nome da marca" value={name} onChange={e => setName(e.target.value)} />
+            </FormField>
+            <FormField label="Descrição">
+              <Input placeholder="Descrição opcional" value={description} onChange={e => setDescription(e.target.value)} />
+            </FormField>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : editing ? 'Salvar' : 'Criar marca'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}
+        title="Remover marca"
+        description={`Deseja remover a marca "${deleteTarget?.name}"?`}
+        confirmLabel="Remover" onConfirm={handleDelete} loading={deleteLoading} variant="danger"
+      />
+    </div>
+  )
+}
+
+// ── Main Settings Page ────────────────────────────────────────
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'categories', label: 'Categorias' },
+  { value: 'brands',     label: 'Marcas' },
+  { value: 'company',    label: 'Empresa' },
+]
+
+export function SettingsPage() {
+  const [tab, setTab] = React.useState<Tab>('categories')
+
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader title="Configurações" description="Gerencie categorias, marcas e informações da empresa" />
+
+      {/* Tab bar */}
+      <div className="border-b">
+        <nav className="flex gap-0 -mb-px">
+          {TABS.map(t => (
+            <button key={t.value} onClick={() => setTab(t.value)}
+              className={cn(
+                'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
+                tab === t.value
+                  ? 'border-[#0D9488] text-[#0D9488]'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              )}>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {tab === 'categories' && <CategoriesTab />}
+      {tab === 'brands' && <BrandsTab />}
+      {tab === 'company' && (
+        <div className="flex flex-col gap-4 max-w-lg">
+          <p className="text-sm text-muted-foreground">Configurações da empresa em desenvolvimento.</p>
+        </div>
+      )}
+    </div>
+  )
+}
