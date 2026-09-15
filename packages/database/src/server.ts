@@ -4,12 +4,15 @@ import type { Database } from './types'
 
 type CookieStore = {
   getAll(): { name: string; value: string }[]
-  setAll(cookies: { name: string; value: string; options?: Record<string, unknown> }[]): void
+  setAll?(cookies: { name: string; value: string; options?: Record<string, unknown> }[]): void
 }
 
 /**
  * Server-side Supabase client para uso em Server Components e Route Handlers.
  * Usa anon key + cookies do usuário — respeita RLS.
+ *
+ * setAll é opcional: ReadonlyRequestCookies (layouts/Server Components) não o implementa.
+ * O try/catch interno já trata o caso sem setAll graciosamente.
  */
 export function createServerSupabaseClient(cookieStore: CookieStore) {
   const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
@@ -26,7 +29,7 @@ export function createServerSupabaseClient(cookieStore: CookieStore) {
       getAll: () => cookieStore.getAll(),
       setAll: (cookiesToSet) => {
         try {
-          cookieStore.setAll(cookiesToSet)
+          cookieStore.setAll?.(cookiesToSet)
         } catch {
           // Server Component sem capacidade de setar cookies — ignorado
         }
