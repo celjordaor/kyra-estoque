@@ -19,11 +19,12 @@ async function DashboardContent() {
   let userName = 'usuário'
   if (user) {
     const admin = createAdminSupabaseClient()
-    const { data: profile } = await admin
+    const { data: profileData } = await admin
       .from('profiles')
       .select('full_name')
       .eq('id', user.id)
       .single()
+    const profile = profileData as { full_name: string | null } | null
     if (profile?.full_name) userName = profile.full_name
   }
 
