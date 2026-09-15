@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LoginForm } from './login-form'
 
 export const metadata = { title: 'Entrar | Kyra Estoque' }
@@ -25,7 +26,9 @@ export default function LoginPage() {
             <h2 className="text-base font-semibold text-foreground">Entrar na sua conta</h2>
             <p className="mt-1 text-sm text-muted-foreground">Use seu e-mail e senha cadastrados.</p>
           </div>
-          <LoginForm />
+          <Suspense fallback={null}>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
     </div>
