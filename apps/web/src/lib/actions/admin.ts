@@ -11,7 +11,7 @@ async function requireSuperAdmin() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profileData } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('is_super_admin')
     .eq('id', user.id)
@@ -77,7 +77,7 @@ export interface AdminStats {
 export async function getAdminTenants(): Promise<TenantRow[]> {
   const { admin } = await requireSuperAdmin()
 
-  const { data: companies } = await admin
+  const { data: companies } = await (admin as any)
     .from('companies')
     .select('id, name, slug, email, is_active, created_at')
     .order('created_at', { ascending: false })
@@ -89,17 +89,17 @@ export async function getAdminTenants(): Promise<TenantRow[]> {
   const companyIds = companies.map(c => c.id)
 
   const [{ data: subs }, { data: profileCounts }, { data: productCounts }] = await Promise.all([
-    admin
+    (admin as any)
       .from('subscriptions')
       .select('company_id, status, trial_ends_at, plans(name, slug)')
       .in('company_id', companyIds)
       .in('status', ['active', 'trialing', 'past_due']),
-    admin
+    (admin as any)
       .from('profiles')
       .select('company_id')
       .in('company_id', companyIds)
       .eq('is_active', true),
-    admin
+    (admin as any)
       .from('products')
       .select('company_id')
       .in('company_id', companyIds)
@@ -152,7 +152,7 @@ export async function toggleTenantActive(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { admin } = await requireSuperAdmin()
-    const { error } = await admin.from('companies').update({ is_active }).eq('id', companyId)
+    const { error } = await (admin as any).from('companies').update({ is_active }).eq('id', companyId)
     if (error) return { success: false, error: error.message }
     revalidatePath('/admin')
     return { success: true }
@@ -164,7 +164,7 @@ export async function toggleTenantActive(
 // ── Leads ──────────────────────────────────────────────────────
 export async function getLeads(): Promise<LeadRow[]> {
   const { admin } = await requireSuperAdmin()
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('leads')
     .select('*')
     .order('created_at', { ascending: false })
@@ -179,7 +179,7 @@ export async function updateLeadStatus(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { admin } = await requireSuperAdmin()
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('leads')
       .update({ status, ...(notes !== undefined ? { notes } : {}) })
       .eq('id', id)
@@ -194,7 +194,7 @@ export async function updateLeadStatus(
 // ── Support Tickets ────────────────────────────────────────────
 export async function getSupportTickets(): Promise<SupportTicketRow[]> {
   const { admin } = await requireSuperAdmin()
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('support_tickets')
     .select('id, subject, category, priority, status, admin_notes, created_at, resolved_at, company_id, user_id')
     .order('created_at', { ascending: false })
@@ -206,7 +206,7 @@ export async function getSupportTickets(): Promise<SupportTicketRow[]> {
   const userIds = [...new Set(data.map(t => t.user_id).filter(Boolean))]
 
   const [{ data: companies }, { data: authUsers }] = await Promise.all([
-    companyIds.length ? admin.from('companies').select('id, name').in('id', companyIds) : Promise.resolve({ data: [] }),
+    companyIds.length ? (admin as any).from('companies').select('id, name').in('id', companyIds) : Promise.resolve({ data: [] }),
     userIds.length ? admin.auth.admin.listUsers({ perPage: 1000 } as any) : Promise.resolve({ data: { users: [] } }),
   ])
 
@@ -237,7 +237,7 @@ export async function updateTicketStatus(
     const update: Record<string, any> = { status }
     if (admin_notes !== undefined) update.admin_notes = admin_notes
     if (status === 'resolved' || status === 'closed') update.resolved_at = new Date().toISOString()
-    const { error } = await admin.from('support_tickets').update(update).eq('id', id)
+    const { error } = await (admin as any).from('support_tickets').update(update).eq('id', id)
     if (error) return { success: false, error: error.message }
     revalidatePath('/admin')
     return { success: true }
@@ -256,10 +256,10 @@ export async function getAdminStats(): Promise<AdminStats> {
       { count: open_tickets },
       { count: new_leads },
     ] = await Promise.all([
-      admin.from('companies').select('id', { count: 'exact', head: true }).eq('is_active', true),
-      admin.from('subscriptions').select('status').in('status', ['active', 'trialing', 'past_due']),
-      admin.from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-      admin.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+      (admin as any).from('companies').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      (admin as any).from('subscriptions').select('status').in('status', ['active', 'trialing', 'past_due']),
+      (admin as any).from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+      (admin as any).from('leads').select('id', { count: 'exact', head: true }).eq('status', 'new'),
     ])
 
     const active = subs?.filter(s => s.status === 'active').length ?? 0
@@ -290,7 +290,7 @@ export interface LogEntry {
 export async function getAdminLogs(): Promise<LogEntry[]> {
   const { admin } = await requireSuperAdmin()
 
-  const { data: events } = await admin
+  const { data: events } = await (admin as any)
     .from('billing_events')
     .select('id, company_id, event_type, payload, created_at')
     .order('created_at', { ascending: false })
@@ -300,7 +300,7 @@ export async function getAdminLogs(): Promise<LogEntry[]> {
 
   const companyIds = [...new Set(events.map(e => e.company_id).filter(Boolean))]
   const { data: companies } = companyIds.length
-    ? await admin.from('companies').select('id, name').in('id', companyIds)
+    ? await (admin as any).from('companies').select('id, name').in('id', companyIds)
     : { data: [] }
 
   const companyMap = new Map((companies ?? []).map((c: any) => [c.id, c.name]))
@@ -413,13 +413,13 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
     { data: usage },
     { data: onboarding },
   ] = await Promise.all([
-    admin
+    (admin as any)
       .from('companies')
       .select('id, name, slug, email, is_active, created_at, kyra_config')
       .eq('id', companyId)
       .single(),
 
-    admin
+    (admin as any)
       .from('subscriptions')
       .select('id, status, trial_ends_at, current_period_start, current_period_end, plans(name, slug)')
       .eq('company_id', companyId)
@@ -428,18 +428,18 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
       .limit(1)
       .maybeSingle(),
 
-    admin
+    (admin as any)
       .from('tenant_entitlement_overrides')
       .select('id, company_id, feature_key, int_value, bool_value, str_value, reason, expires_at, granted_by, created_at')
       .eq('company_id', companyId)
       .order('created_at', { ascending: false }),
 
-    admin
+    (admin as any)
       .from('ai_usage_logs')
       .select('total_tokens, cost_brl_cents')
       .eq('company_id', companyId),
 
-    admin
+    (admin as any)
       .from('onboarding_checkpoints')
       .select('checkpoint_key, display_name, day, completed, completed_at')
       .eq('company_id', companyId)
@@ -524,7 +524,7 @@ export async function changeTenantPlan(
   try {
     const { admin } = await requireSuperAdmin()
 
-    const { data: plan } = await admin
+    const { data: plan } = await (admin as any)
       .from('plans')
       .select('id, name')
       .eq('slug', planSlug)
@@ -536,7 +536,7 @@ export async function changeTenantPlan(
     const now = new Date()
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()).toISOString()
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('subscriptions')
       .update({
         plan_id: plan.id,
@@ -562,7 +562,7 @@ export async function changeTenantPlan(
 export async function getTenantOverrides(companyId: string): Promise<TenantOverrideRow[]> {
   const { admin } = await requireSuperAdmin()
 
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('tenant_entitlement_overrides')
     .select('id, company_id, feature_key, int_value, bool_value, str_value, reason, expires_at, granted_by, created_at')
     .eq('company_id', companyId)
@@ -612,7 +612,7 @@ export async function setTenantOverride(
       return { success: false, error: 'Informe ao menos um valor (int, bool ou str)' }
     }
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('tenant_entitlement_overrides')
       .upsert(
         {
@@ -643,7 +643,7 @@ export async function deleteTenantOverride(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { admin } = await requireSuperAdmin()
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('tenant_entitlement_overrides')
       .delete()
       .eq('company_id', companyId)
@@ -661,7 +661,7 @@ export async function deleteTenantOverride(
 export async function getFeatureFlags(): Promise<FeatureFlagRow[]> {
   const { admin } = await requireSuperAdmin()
 
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('feature_flags')
     .select('id, feature_key, display_name, commercial_enabled, technical_status, description, updated_at')
     .order('feature_key')
@@ -684,7 +684,7 @@ export async function updateFeatureFlag(
       return { success: false, error: 'Nenhuma atualização informada' }
     }
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('feature_flags')
       .update(updates)
       .eq('feature_key', featureKey)
@@ -707,7 +707,7 @@ export async function getAiUsageStats(filters?: {
 }): Promise<AiUsageSummary[]> {
   const { admin } = await requireSuperAdmin()
 
-  let query = admin
+  let query = (admin as any)
     .from('ai_usage_logs')
     .select('company_id, total_tokens, cost_brl_cents, period_start')
 
@@ -733,7 +733,7 @@ export async function getAiUsageStats(filters?: {
   }
 
   const companyIds = [...grouped.keys()]
-  const { data: companies } = await admin
+  const { data: companies } = await (admin as any)
     .from('companies')
     .select('id, name')
     .in('id', companyIds)

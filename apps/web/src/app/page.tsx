@@ -1746,7 +1746,7 @@ function Footer() {
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em" }} className="text-slate-400 uppercase font-semibold mb-3">Legal</p>
             <ul className="space-y-1.5">
               {legalLinks.map((l) => (
-                <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-teal-600 transition-colors" style={{ fontFamily: "var(--font-sans)" }}>{l.label}</Link></li>
+                <li key={l.href}><Link href={l.href as any} className="text-sm text-slate-500 hover:text-teal-600 transition-colors" style={{ fontFamily: "var(--font-sans)" }}>{l.label}</Link></li>
               ))}
             </ul>
           </div>

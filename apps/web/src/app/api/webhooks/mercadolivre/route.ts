@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminSupabaseClient()
 
   // Acha integração pelo seller_id
-  const { data: integrations } = await admin
+  const { data: integrations } = await (admin as any)
     .from('company_integrations')
     .select('id, company_id, config')
     .eq('type', 'mercado_livre')
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     cancelled:          'canceled',
   }
 
-  await admin.from('channel_orders').upsert({
+  await (admin as any).from('channel_orders').upsert({
     company_id: companyId,
     integration_id: integrationId,
     external_order_id: String(order.id),

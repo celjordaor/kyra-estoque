@@ -10,13 +10,14 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('company_id, role')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { company_id: string | null; role: string } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, admin, companyId: profile.company_id, myRole: profile.role, userId: user.id }
+  return { supabase, admin, companyId: profile.company_id as string, myRole: profile.role, userId: user.id }
 }
 
 export interface KyraConfig {
@@ -40,7 +41,7 @@ const DEFAULT_CONFIG: KyraConfig = {
 export async function getKyraConfig(): Promise<KyraConfig> {
   try {
     const { admin, companyId } = await getServerContext()
-    const { data } = await admin
+    const { data } = await (admin as any)
       .from('companies')
       .select('kyra_config')
       .eq('id', companyId)
@@ -58,7 +59,7 @@ export async function updateKyraConfig(
     const { admin, companyId, myRole } = await getServerContext()
     if (!['owner', 'admin'].includes(myRole)) return { success: false, error: 'Sem permissão' }
 
-    const { data: current } = await admin
+    const { data: current } = await (admin as any)
       .from('companies')
       .select('kyra_config')
       .eq('id', companyId)
@@ -66,7 +67,7 @@ export async function updateKyraConfig(
 
     const merged = { ...(current?.kyra_config ?? {}), ...config }
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('companies')
       .update({ kyra_config: merged })
       .eq('id', companyId)

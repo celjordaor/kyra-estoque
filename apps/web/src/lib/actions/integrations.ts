@@ -10,13 +10,14 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('company_id, role')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { company_id: string | null; role: string } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, admin, companyId: profile.company_id, myRole: profile.role }
+  return { supabase, admin, companyId: profile.company_id as string, myRole: profile.role }
 }
 
 export type IntegrationType = 'asaas' | 'whatsapp' | 'shopify' | 'mercadolivre' | 'woocommerce'
@@ -30,7 +31,7 @@ export interface Integration {
 export async function getIntegrations(): Promise<Integration[]> {
   try {
     const { admin, companyId } = await getServerContext()
-    const { data } = await admin
+    const { data } = await (admin as any)
       .from('company_integrations')
       .select('type, is_active, config')
       .eq('company_id', companyId)
@@ -49,7 +50,7 @@ export async function upsertIntegration(
     const { admin, companyId, myRole } = await getServerContext()
     if (!['owner', 'admin'].includes(myRole)) return { success: false, error: 'Sem permissão' }
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('company_integrations')
       .upsert(
         { company_id: companyId, type, config, is_active },
@@ -71,7 +72,7 @@ export async function toggleIntegration(
     const { admin, companyId, myRole } = await getServerContext()
     if (!['owner', 'admin'].includes(myRole)) return { success: false, error: 'Sem permissão' }
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('company_integrations')
       .update({ is_active })
       .eq('company_id', companyId)

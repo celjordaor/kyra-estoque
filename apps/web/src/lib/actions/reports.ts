@@ -12,13 +12,14 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, admin, companyId: profile.company_id }
+  return { supabase, admin, companyId: profile.company_id as string }
 }
 
 // ── Types ─────────────────────────────────────────────────────
@@ -76,7 +77,7 @@ export async function getStockReport(filters?: {
 }): Promise<{ rows: StockReportRow[]; summary: { total_items: number; total_value: number; alerts: number } }> {
   const { admin, companyId } = await getServerContext()
 
-  let q = admin
+  let q = (admin as any)
     .from('products')
     .select('id, name, sku, stock_quantity, min_stock, unit, cost_price, sale_price, category:categories(name)')
     .eq('company_id', companyId)
@@ -86,7 +87,7 @@ export async function getStockReport(filters?: {
   if (filters?.category) q = q.eq('categories.name', filters.category)
 
   const { data } = await q
-  let rows: StockReportRow[] = (data ?? []).map(p => {
+  let rows: StockReportRow[] = (data ?? []).map((p: any) => {
     const status: StockReportRow['status'] =
       p.stock_quantity <= 0 ? 'ZERADO' :
       p.min_stock > 0 && p.stock_quantity <= p.min_stock ? 'BAIXO' : 'OK'
@@ -117,7 +118,7 @@ export async function getMovementsReport(params: {
 }): Promise<{ rows: MovementReportRow[]; summary: { total: number; entradas: number; saidas: number; ajustes: number } }> {
   const { admin, companyId } = await getServerContext()
 
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('stock_movements')
     .select('id, movement_type, quantity, notes, created_at, products(name, sku, categories(name))')
     .eq('company_id', companyId)
@@ -126,7 +127,7 @@ export async function getMovementsReport(params: {
     .order('created_at', { ascending: false })
     .limit(500)
 
-  const rows: MovementReportRow[] = (data ?? []).map(m => ({
+  const rows: MovementReportRow[] = (data ?? []).map((m: any) => ({
     id: m.id,
     product_name: (m.products as any)?.name ?? 'Desconhecido',
     sku: (m.products as any)?.sku ?? null,
@@ -154,7 +155,7 @@ export async function getAbcCurveReport(): Promise<{
   const isAdvanced = await hasFeature(companyId, 'reports.advanced.enabled')
   if (!isAdvanced) return { rows: [], isLocked: true }
 
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('mv_product_sales_summary')
     .select('product_id, name, sku, category_name, total_revenue, total_sold_qty, total_gross_profit')
     .eq('company_id', companyId)
@@ -162,9 +163,9 @@ export async function getAbcCurveReport(): Promise<{
     .order('total_revenue', { ascending: false })
     .limit(500)
 
-  const totalRevenue = (data ?? []).reduce((s, r) => s + Number(r.total_revenue), 0)
+  const totalRevenue = (data ?? []).reduce((s: number, r: any) => s + Number(r.total_revenue), 0)
   let cumulative = 0
-  const rows: AbcRow[] = (data ?? []).map((r, i) => {
+  const rows: AbcRow[] = (data ?? []).map((r: any, i: number) => {
     const revPct = totalRevenue > 0 ? (Number(r.total_revenue) / totalRevenue) * 100 : 0
     cumulative += revPct
     return {
@@ -196,7 +197,7 @@ export async function getSalesReport(params: {
 }> {
   const { admin, companyId } = await getServerContext()
 
-  const { data: sales } = await admin
+  const { data: sales } = await (admin as any)
     .from('sales')
     .select('id, total_amount, created_at, sale_items(product_id, quantity, unit_price, products(name, cost_price, categories(name)))')
     .eq('company_id', companyId)
@@ -242,7 +243,7 @@ export async function getSalesReport(params: {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 20)
 
-  const total_revenue = (sales ?? []).reduce((s, x) => s + Number(x.total_amount), 0)
+  const total_revenue = (sales ?? []).reduce((s: number, x: any) => s + Number(x.total_amount), 0)
   const total_profit = topProducts.reduce((s, r) => s + r.profit, 0)
 
   return {
@@ -267,7 +268,7 @@ export async function getPurchasesReport(params: {
 }> {
   const { admin, companyId } = await getServerContext()
 
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('purchase_orders')
     .select('id, order_number, status, total_amount, created_at, suppliers(name), purchase_order_items(id)')
     .eq('company_id', companyId)
@@ -275,7 +276,7 @@ export async function getPurchasesReport(params: {
     .lte('created_at', params.end)
     .order('created_at', { ascending: false })
 
-  const rows: PurchasesReportRow[] = (data ?? []).map(o => ({
+  const rows: PurchasesReportRow[] = (data ?? []).map((o: any) => ({
     id: o.id,
     order_number: o.order_number,
     supplier: (o.suppliers as any)?.name ?? null,
@@ -307,7 +308,7 @@ export async function getSlowMovingReport(daysStopped = 30): Promise<{
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysStopped)
 
-  const { data: products } = await admin
+  const { data: products } = await (admin as any)
     .from('products')
     .select('id, name, sku, stock_quantity, cost_price, categories(name)')
     .eq('company_id', companyId)
@@ -315,8 +316,8 @@ export async function getSlowMovingReport(daysStopped = 30): Promise<{
     .gt('stock_quantity', 0)
 
   // Last movement per product
-  const productIds = (products ?? []).map(p => p.id)
-  const { data: lastMovs } = await admin
+  const productIds = (products ?? []).map((p: any) => p.id)
+  const { data: lastMovs } = await (admin as any)
     .from('stock_movements')
     .select('product_id, created_at')
     .eq('company_id', companyId)
@@ -331,12 +332,12 @@ export async function getSlowMovingReport(daysStopped = 30): Promise<{
 
   const today = new Date()
   const rows: SlowMovingRow[] = (products ?? [])
-    .filter(p => {
+    .filter((p: any) => {
       const last = lastMovMap[p.id]
       if (!last) return true // never sold = parado desde o cadastro
       return new Date(last) < cutoff
     })
-    .map(p => {
+    .map((p: any) => {
       const last = lastMovMap[p.id] ?? null
       const days = last
         ? Math.floor((today.getTime() - new Date(last).getTime()) / 86400000)
@@ -351,7 +352,7 @@ export async function getSlowMovingReport(daysStopped = 30): Promise<{
         days_stopped: days,
       }
     })
-    .sort((a, b) => b.days_stopped - a.days_stopped)
+    .sort((a: SlowMovingRow, b: SlowMovingRow) => b.days_stopped - a.days_stopped)
 
   return {
     rows,
@@ -373,7 +374,7 @@ export async function getMarginReport(): Promise<{
     summary: { avg_margin: 0, total_revenue: 0, total_profit: 0, high_margin: 0 },
   }
 
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('mv_product_sales_summary')
     .select('product_id, name, sku, category_name, cost_price, sale_price, total_sold_qty, total_revenue, total_gross_profit')
     .eq('company_id', companyId)
@@ -381,7 +382,7 @@ export async function getMarginReport(): Promise<{
     .order('total_gross_profit', { ascending: false })
     .limit(300)
 
-  const rows: MarginRow[] = (data ?? []).map(r => {
+  const rows: MarginRow[] = (data ?? []).map((r: any) => {
     const sale_price = Number(r.sale_price)
     const cost_price = Number(r.cost_price)
     const margin_brl = sale_price - cost_price

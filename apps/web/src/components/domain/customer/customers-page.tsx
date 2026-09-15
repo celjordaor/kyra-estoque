@@ -113,8 +113,8 @@ export function CustomersPage() {
         state: values.state || null, notes: values.notes || null, is_active: true,
       }
       const r = editing
-        ? await updateCustomer(editing.id, payload)
-        : await createCustomer(payload)
+        ? await updateCustomer(editing.id, { ...payload, state_registration: '', whatsapp: '' })
+        : await createCustomer({ ...payload, state_registration: '', whatsapp: '' })
       if (!r.success) { toast.error(r.error ?? 'Erro ao salvar'); return }
       toast.success(editing ? 'Cliente atualizado' : 'Cliente cadastrado')
       setFormOpen(false)
@@ -151,7 +151,7 @@ export function CustomersPage() {
     },
     {
       key: 'is_active', header: 'Status',
-      cell: (c) => <Badge variant={c.is_active ? 'default' : 'secondary'}>{c.is_active ? 'Ativo' : 'Inativo'}</Badge>
+      cell: (c) => <Badge variant={c.is_active ? 'success' : 'neutral'}>{c.is_active ? 'Ativo' : 'Inativo'}</Badge>
     },
     {
       key: 'actions', header: '',
@@ -207,7 +207,7 @@ export function CustomersPage() {
             <SectionHeader>Dados pessoais</SectionHeader>
 
             <div className="flex flex-col gap-4 mb-6">
-              <FormField label="Tipo de pessoa">
+              <FormField id="person_type" label="Tipo de pessoa">
                 <Select value={values.person_type} onValueChange={v => { set('person_type', v as 'individual' | 'company'); set('document', '') }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -217,7 +217,7 @@ export function CustomersPage() {
                 </Select>
               </FormField>
 
-              <FormField label="Nome completo *">
+              <FormField id="name" label="Nome completo *">
                 <Input
                   placeholder={values.person_type === 'individual' ? 'Nome completo' : 'Razão social'}
                   value={values.name}
@@ -225,7 +225,7 @@ export function CustomersPage() {
                 />
               </FormField>
 
-              <FormField label={values.person_type === 'individual' ? 'CPF' : 'CNPJ'}>
+              <FormField id="document" label={values.person_type === 'individual' ? 'CPF' : 'CNPJ'}>
                 <Input
                   placeholder={values.person_type === 'individual' ? '000.000.000-00' : '00.000.000/0000-00'}
                   value={values.document}
@@ -233,7 +233,7 @@ export function CustomersPage() {
                 />
               </FormField>
 
-              <FormField label="Telefone">
+              <FormField id="phone" label="Telefone">
                 <Input
                   placeholder="(00) 00000-0000"
                   value={values.phone}
@@ -241,11 +241,11 @@ export function CustomersPage() {
                 />
               </FormField>
 
-              <FormField label="E-mail">
+              <FormField id="email" label="E-mail">
                 <Input type="email" placeholder="email@exemplo.com" value={values.email} onChange={e => set('email', e.target.value)} />
               </FormField>
 
-              <FormField label="Observações">
+              <FormField id="notes" label="Observações">
                 <textarea
                   className="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder="Observações internas..."
@@ -259,7 +259,7 @@ export function CustomersPage() {
             <SectionHeader>Endereço</SectionHeader>
 
             <div className="flex flex-col gap-4">
-              <FormField label="CEP">
+              <FormField id="zipcode" label="CEP">
                 <CepInput
                   value={values.zipcode}
                   onChange={v => set('zipcode', v)}
@@ -274,28 +274,28 @@ export function CustomersPage() {
                 />
               </FormField>
 
-              <FormField label="Logradouro">
+              <FormField id="address" label="Logradouro">
                 <Input placeholder="Rua, Av..." value={values.address} onChange={e => set('address', e.target.value)} />
               </FormField>
 
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Número">
+                <FormField id="address_number" label="Número">
                   <Input placeholder="Nº" value={values.address_number} onChange={e => set('address_number', e.target.value)} />
                 </FormField>
-                <FormField label="Complemento">
+                <FormField id="complement" label="Complemento">
                   <Input placeholder="Apto, sala..." value={values.complement} onChange={e => set('complement', e.target.value)} />
                 </FormField>
               </div>
 
-              <FormField label="Bairro">
+              <FormField id="neighborhood" label="Bairro">
                 <Input placeholder="Bairro" value={values.neighborhood} onChange={e => set('neighborhood', e.target.value)} />
               </FormField>
 
               <div className="grid grid-cols-3 gap-3">
-                <FormField label="Cidade" className="col-span-2">
+                <FormField id="city" label="Cidade" className="col-span-2">
                   <Input placeholder="Cidade" value={values.city} onChange={e => set('city', e.target.value)} />
                 </FormField>
-                <FormField label="UF">
+                <FormField id="state" label="UF">
                   <Select value={values.state} onValueChange={v => set('state', v)}>
                     <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                     <SelectContent>{STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>

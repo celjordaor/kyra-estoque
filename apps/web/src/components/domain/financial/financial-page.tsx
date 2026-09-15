@@ -345,7 +345,7 @@ function ResumoTab({
                     <p className="text-xs text-muted-foreground">{accountTypeLabel[acc.type]}</p>
                     <p className="text-sm font-semibold">{fmt(acc.balance_cents)}</p>
                   </div>
-                  {acc.is_default && <Badge variant="secondary" className="ml-auto text-xs">Padrão</Badge>}
+                  {acc.is_default && <Badge variant="neutral" className="ml-auto text-xs">Padrão</Badge>}
                 </div>
               )
             })}

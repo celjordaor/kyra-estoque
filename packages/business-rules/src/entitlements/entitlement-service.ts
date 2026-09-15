@@ -52,7 +52,7 @@ export interface CompanyEntitlements {
 async function fetchActiveSubscription(companyId: string) {
   const supabase = createAdminSupabaseClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('subscriptions')
     .select(
       `
@@ -80,7 +80,7 @@ async function fetchActiveSubscription(companyId: string) {
     .maybeSingle()
 
   if (error || !data) return null
-  return data
+  return data as any
 }
 
 
@@ -95,7 +95,7 @@ async function fetchActiveOverride(
   featureKey: string
 ): Promise<Pick<{ int_value: number | null; bool_value: boolean | null; str_value: string | null }, 'int_value' | 'bool_value' | 'str_value'> | null> {
   const supabase = createAdminSupabaseClient()
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from('tenant_entitlement_overrides')
     .select('int_value, bool_value, str_value, expires_at')
     .eq('company_id', companyId)
@@ -116,7 +116,7 @@ async function fetchActiveOverride(
 async function isFeatureTechnicallyAvailable(featureKey: string): Promise<boolean> {
   try {
     const supabase = createAdminSupabaseClient()
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('feature_flags')
       .select('commercial_enabled, technical_status')
       .eq('feature_key', featureKey)
@@ -244,7 +244,7 @@ export async function getUsage(
 
   const supabase = createAdminSupabaseClient()
 
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from('usage_counters')
     .select('current_value')
     .eq('company_id', companyId)
@@ -305,13 +305,13 @@ export async function incrementUsage(
 
   const supabase = createAdminSupabaseClient()
 
-  const { error } = await supabase.rpc('increment_usage_counter', {
+  const { error } = await (supabase as any).rpc('increment_usage_counter' as any, {
     p_company_id: companyId,
     p_metric_key: metricKey,
     p_period_start: entitlements.periodStart,
     p_period_end: entitlements.periodEnd,
     p_amount: amount,
-  })
+  } as any)
 
   if (error) {
     throw new Error(`[EntitlementService] Falha ao incrementar uso de "${metricKey}": ${error.message}`)

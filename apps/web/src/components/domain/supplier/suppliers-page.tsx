@@ -118,8 +118,10 @@ export function SuppliersPage() {
         name: values.name,
         trade_name: values.trade_name || null,
         document: values.document || null,
+        state_registration: values.state_registration || null,
         email: values.email || null,
         phone: values.phone || null,
+        whatsapp: values.whatsapp || null,
         contact_name: values.contact_name || null,
         zipcode: values.zipcode || null,
         address: values.address || null,
@@ -168,7 +170,7 @@ export function SuppliersPage() {
     { key: 'email', header: 'E-mail', className: 'hidden lg:table-cell', cell: (s) => <span className="text-sm">{s.email ?? '—'}</span> },
     {
       key: 'is_active', header: 'Status',
-      cell: (s) => <Badge variant={s.is_active ? 'default' : 'secondary'}>{s.is_active ? 'Ativo' : 'Inativo'}</Badge>
+      cell: (s) => <Badge variant={s.is_active ? 'success' : 'neutral'}>{s.is_active ? 'Ativo' : 'Inativo'}</Badge>
     },
     {
       key: 'actions', header: '',
@@ -224,7 +226,7 @@ export function SuppliersPage() {
             <SectionHeader>Dados da empresa</SectionHeader>
 
             <div className="flex flex-col gap-4 mb-6">
-              <FormField label="Tipo">
+              <FormField id="person_type" label="Tipo">
                 <Select value={values.person_type} onValueChange={v => set('person_type', v as 'individual' | 'company')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -234,7 +236,7 @@ export function SuppliersPage() {
                 </Select>
               </FormField>
 
-              <FormField label={values.person_type === 'company' ? 'Razão social *' : 'Nome *'}>
+              <FormField id="name" label={values.person_type === 'company' ? 'Razão social *' : 'Nome *'}>
                 <Input
                   placeholder={values.person_type === 'company' ? 'Razão social' : 'Nome completo'}
                   value={values.name}
@@ -243,12 +245,12 @@ export function SuppliersPage() {
               </FormField>
 
               {values.person_type === 'company' && (
-                <FormField label="Nome fantasia">
+                <FormField id="trade_name" label="Nome fantasia">
                   <Input placeholder="Nome fantasia" value={values.trade_name} onChange={e => set('trade_name', e.target.value)} />
                 </FormField>
               )}
 
-              <FormField label={values.person_type === 'company' ? 'CNPJ' : 'CPF'}>
+              <FormField id="document" label={values.person_type === 'company' ? 'CNPJ' : 'CPF'}>
                 <Input
                   placeholder={values.person_type === 'company' ? '00.000.000/0000-00' : '000.000.000-00'}
                   value={values.document}
@@ -257,24 +259,24 @@ export function SuppliersPage() {
               </FormField>
 
               {values.person_type === 'company' && (
-                <FormField label="Inscrição estadual">
+                <FormField id="state_registration" label="Inscrição estadual">
                   <Input placeholder="Inscrição estadual" value={values.state_registration} onChange={e => set('state_registration', e.target.value)} />
                 </FormField>
               )}
 
-              <FormField label="Telefone">
+              <FormField id="phone" label="Telefone">
                 <Input placeholder="(00) 00000-0000" value={values.phone} onChange={e => set('phone', formatPhone(e.target.value))} />
               </FormField>
 
-              <FormField label="WhatsApp">
+              <FormField id="whatsapp" label="WhatsApp">
                 <Input placeholder="(00) 00000-0000" value={values.whatsapp} onChange={e => set('whatsapp', formatPhone(e.target.value))} />
               </FormField>
 
-              <FormField label="E-mail">
+              <FormField id="email" label="E-mail">
                 <Input type="email" placeholder="email@fornecedor.com" value={values.email} onChange={e => set('email', e.target.value)} />
               </FormField>
 
-              <FormField label="Contato (responsável)">
+              <FormField id="contact_name" label="Contato (responsável)">
                 <Input placeholder="Nome do responsável" value={values.contact_name} onChange={e => set('contact_name', e.target.value)} />
               </FormField>
             </div>
@@ -284,7 +286,7 @@ export function SuppliersPage() {
 
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="CEP" className="col-span-2">
+                <FormField id="zipcode" label="CEP" className="col-span-2">
                   <CepInput
                     value={values.zipcode}
                     onChange={v => set('zipcode', v)}
@@ -300,28 +302,28 @@ export function SuppliersPage() {
                 </FormField>
               </div>
 
-              <FormField label="Logradouro">
+              <FormField id="address" label="Logradouro">
                 <Input placeholder="Rua, Av..." value={values.address} onChange={e => set('address', e.target.value)} />
               </FormField>
 
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Número">
+                <FormField id="address_number" label="Número">
                   <Input placeholder="Nº" value={values.address_number} onChange={e => set('address_number', e.target.value)} />
                 </FormField>
-                <FormField label="Complemento">
+                <FormField id="complement" label="Complemento">
                   <Input placeholder="Sala, galpão..." value={values.complement} onChange={e => set('complement', e.target.value)} />
                 </FormField>
               </div>
 
-              <FormField label="Bairro">
+              <FormField id="neighborhood" label="Bairro">
                 <Input placeholder="Bairro" value={values.neighborhood} onChange={e => set('neighborhood', e.target.value)} />
               </FormField>
 
               <div className="grid grid-cols-3 gap-3">
-                <FormField label="Cidade" className="col-span-2">
+                <FormField id="city" label="Cidade" className="col-span-2">
                   <Input placeholder="Cidade" value={values.city} onChange={e => set('city', e.target.value)} />
                 </FormField>
-                <FormField label="UF">
+                <FormField id="state" label="UF">
                   <Select value={values.state} onValueChange={v => set('state', v)}>
                     <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                     <SelectContent>{STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -329,7 +331,7 @@ export function SuppliersPage() {
                 </FormField>
               </div>
 
-              <FormField label="Observações">
+              <FormField id="notes" label="Observações">
                 <textarea
                   className="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder="Observações internas..."

@@ -19,15 +19,17 @@ async function getServerContext() {
 
   // Admin client bypasses RLS — seguro pois rodamos em Server Action
   const admin = createAdminSupabaseClient()
-  const { data: profile, error: profileErr } = await admin
+  const { data: profileData, error: profileErr } = await (admin as any)
     .from('profiles')
     .select('company_id, role')
     .eq('id', user.id)
     .single()
 
+  const profile = profileData as { company_id: string | null; role: string | null } | null
+
   if (profileErr || !profile?.company_id) throw new Error('Empresa não encontrada')
 
-  return { supabase, userId: user.id, companyId: profile.company_id, role: profile.role }
+  return { supabase, userId: user.id, companyId: profile.company_id as string, role: profile.role }
 }
 
 // ── Tipos de retorno ──────────────────────────────────────────
@@ -60,7 +62,7 @@ export async function getProducts(filters: Partial<ProductFilterValues> = {}): P
     no_cost,
   } = filters
 
-  let query = supabase
+  let query = (supabase as any)
     .from('products')
     .select(`
       *,
@@ -82,7 +84,7 @@ export async function getProducts(filters: Partial<ProductFilterValues> = {}): P
   // low/ok stock filtering done in-memory since it depends on per-product min_stock
 
   // Filtros de qualidade de cadastro
-  if (no_image) query = (query as any).or('image_url.is.null,image_url.eq.')
+  if (no_image) query = query.or('image_url.is.null,image_url.eq.')
   if (no_cost)  query = query.lte('cost_price', 0)
 
   // Pagination
@@ -93,7 +95,7 @@ export async function getProducts(filters: Partial<ProductFilterValues> = {}): P
 
   if (error) throw new Error(`Erro ao buscar produtos: ${error.message}`)
 
-  const products: ProductWithCategory[] = (data ?? []).map((p) => ({
+  const products: ProductWithCategory[] = (data ?? []).map((p: any) => ({
     ...(p as ProductRow),
     category: (p as { category: CategoryRow | null }).category,
     stock_status: getStockStatus(p.stock_quantity, p.min_stock, p.ai_reorder_point),
@@ -120,7 +122,7 @@ export async function getProducts(filters: Partial<ProductFilterValues> = {}): P
 export async function getProduct(id: string): Promise<ProductWithCategory | null> {
   const { supabase, companyId } = await getServerContext()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('products')
     .select('*, category:categories(id, name, color)')
     .eq('id', id)
@@ -144,7 +146,7 @@ export async function createProduct(
   try {
     const { supabase, companyId, userId } = await getServerContext()
     // ── Enforcement: products.max ────────────────────────────────
-    const { count: productCount } = await supabase
+    const { count: productCount } = await (supabase as any)
       .from('products')
       .select('*', { count: 'exact', head: true })
       .eq('company_id', companyId)
@@ -174,12 +176,11 @@ export async function createProduct(
       is_active: parsed.is_active,
       is_featured: parsed.is_featured,
       image_url: parsed.image_url || null,
-      ncm: parsed.ncm || null,
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('products')
-      .insert(insert)
+      .insert({ ...insert, ncm: parsed.ncm || null } as any)
       .select('id')
       .single()
 
@@ -216,12 +217,16 @@ export async function updateProduct(
       ...(values.is_active !== undefined && { is_active: values.is_active }),
       ...(values.is_featured !== undefined && { is_featured: values.is_featured }),
       ...(values.image_url !== undefined && { image_url: values.image_url || null }),
+    }
+
+    const finalUpdate = {
+      ...update,
       ...(values.ncm !== undefined && { ncm: values.ncm || null }),
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('products')
-      .update(update)
+      .update(finalUpdate as any)
       .eq('id', id)
       .eq('company_id', companyId)
 
@@ -242,7 +247,7 @@ export async function deleteProduct(
   try {
     const { supabase, companyId } = await getServerContext()
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('products')
       .update({ is_active: false })
       .eq('id', id)
@@ -261,7 +266,7 @@ export async function deleteProduct(
 export async function getCategories() {
   const { supabase, companyId } = await getServerContext()
 
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from('categories')
     .select('id, name, color, icon, ncm')
     .eq('company_id', companyId)

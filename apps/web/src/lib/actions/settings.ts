@@ -10,10 +10,10 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profileData } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
   const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, companyId: profile.company_id, userId: user.id }
+  return { supabase, companyId: profile.company_id as string, userId: user.id }
 }
 
 // ── Types ──────────────────────────────────────────────────────
@@ -62,9 +62,10 @@ export interface UpdateCompanyProfileInput {
 
 // ── Get full company settings ──────────────────────────────────
 export async function getCompanySettings(): Promise<CompanySettings | null> {
-  const { supabase, companyId } = await getServerContext()
+  const { companyId } = await getServerContext()
+  const admin = createAdminSupabaseClient()
 
-  const { data: rawData, error } = await supabase
+  const { data: rawData, error } = await (admin as any)
     .from('companies')
     .select(`
       id, name, fantasy_name, document, email, phone, website, logo_url,
@@ -118,7 +119,7 @@ export async function updateCompanyProfile(
     const { companyId } = await getServerContext()
     const admin = createAdminSupabaseClient()
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('companies')
       .update({
         name: values.name,
@@ -137,7 +138,7 @@ export async function updateCompanyProfile(
       })
       .eq('id', companyId)
 
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message }
 
     revalidatePath('/settings')
     return { success: true }
@@ -169,12 +170,12 @@ export async function uploadCompanyLogo(
 
     const { data: urlData } = admin.storage.from('company-logos').getPublicUrl(path)
 
-    const { error: dbError } = await admin
+    const { error: dbError } = await (admin as any)
       .from('companies')
       .update({ logo_url: urlData.publicUrl })
       .eq('id', companyId)
 
-    if (dbError) return { success: false, error: dbError.message }
+    if (dbError) return { success: false, error: (dbError as any).message }
 
     revalidatePath('/settings')
     return { success: true, url: urlData.publicUrl }
@@ -191,7 +192,7 @@ export async function updateOperationSettings(
     const { companyId } = await getServerContext()
     const admin = createAdminSupabaseClient()
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('companies')
       .update({
         allow_negative_stock: values.allow_negative_stock,
@@ -201,7 +202,7 @@ export async function updateOperationSettings(
       })
       .eq('id', companyId)
 
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message }
 
     revalidatePath('/settings')
     return { success: true }
@@ -232,7 +233,7 @@ export async function getFiscalConfig(): Promise<FiscalConfig> {
   try {
     const { companyId } = await getServerContext()
     const admin = createAdminSupabaseClient()
-    const { data: rawFiscal } = await admin
+    const { data: rawFiscal } = await (admin as any)
       .from('companies')
       .select('kyra_config')
       .eq('id', companyId)
@@ -252,7 +253,7 @@ export async function updateFiscalConfig(
     const admin = createAdminSupabaseClient()
 
     // Busca config atual para fazer merge sem perder outros campos do kyra_config
-    const { data: rawCurrent } = await admin
+    const { data: rawCurrent } = await (admin as any)
       .from('companies')
       .select('kyra_config')
       .eq('id', companyId)
@@ -264,12 +265,12 @@ export async function updateFiscalConfig(
       fiscal,
     }
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('companies')
       .update({ kyra_config: merged })
       .eq('id', companyId)
 
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message }
     revalidatePath('/settings')
     return { success: true }
   } catch (e) {

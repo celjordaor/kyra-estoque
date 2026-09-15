@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   // 1. Identifica o tenant pelo store_url ANTES de verificar a assinatura
   //    (o secret fica em company_integrations.config.webhook_secret por-tenant)
-  const { data: integrations } = await admin
+  const { data: integrations } = await (admin as any)
     .from('company_integrations')
     .select('id, company_id, config')
     .eq('type', 'woocommerce')
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     'on-hold':   'pending',
   }
 
-  await admin.from('channel_orders').upsert({
+  await (admin as any).from('channel_orders').upsert({
     company_id: companyId,
     integration_id: integrationId,
     external_order_id: String(payload.id),

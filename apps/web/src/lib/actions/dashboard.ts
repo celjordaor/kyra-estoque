@@ -13,15 +13,17 @@ async function getServerContext() {
 
   // Admin client bypasses RLS — seguro pois rodamos em Server Action
   const admin = createAdminSupabaseClient()
-  const { data: profile, error: profileErr } = await admin
+  const { data: profileData, error: profileErr } = await (admin as any)
     .from('profiles')
     .select('company_id, role, full_name')
     .eq('id', user.id)
     .single()
 
+  const profile = profileData as { company_id: string | null; role: string | null; full_name: string | null } | null
+
   if (profileErr || !profile?.company_id) throw new Error('Empresa não encontrada')
 
-  return { supabase, userId: user.id, companyId: profile.company_id, fullName: profile.full_name }
+  return { supabase, userId: user.id, companyId: profile.company_id as string, fullName: profile.full_name }
 }
 
 // ── Tipos ──────────────────────────────────────────────────────
@@ -91,19 +93,19 @@ export async function getDashboardData(): Promise<{ data: DashboardData | null; 
     const { supabase, companyId } = await getServerContext()
 
     // ── Produtos ──────────────────────────────────────────────────────
-    const { data: products, error: productsErr } = await supabase
+    const { data: products, error: productsErr } = await (supabase as any)
       .from('products')
       .select('id, name, cost_price, sale_price, stock_quantity, min_stock, image_url, is_active, category_id')
       .eq('company_id', companyId)
 
     if (productsErr) throw new Error(productsErr.message)
 
-    const activeProducts = (products ?? []).filter(p => p.is_active)
-    const stockValue = activeProducts.reduce((sum, p) => sum + ((p.cost_price ?? 0) * (p.stock_quantity ?? 0)), 0)
-    const lowStockCount = activeProducts.filter(p => (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) <= (p.min_stock ?? 0)).length
-    const outOfStockCount = activeProducts.filter(p => (p.stock_quantity ?? 0) <= 0).length
-    const noImageCount = activeProducts.filter(p => !p.image_url).length
-    const noCostCount = activeProducts.filter(p => !p.cost_price || p.cost_price <= 0).length
+    const activeProducts = (products ?? []).filter((p: any) => p.is_active)
+    const stockValue = activeProducts.reduce((sum: number, p: any) => sum + ((p.cost_price ?? 0) * (p.stock_quantity ?? 0)), 0)
+    const lowStockCount = activeProducts.filter((p: any) => (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) <= (p.min_stock ?? 0)).length
+    const outOfStockCount = activeProducts.filter((p: any) => (p.stock_quantity ?? 0) <= 0).length
+    const noImageCount = activeProducts.filter((p: any) => !p.image_url).length
+    const noCostCount = activeProducts.filter((p: any) => !p.cost_price || p.cost_price <= 0).length
 
     // ── Datas de período ───────────────────────────────────────────────
     const now = new Date()
@@ -112,19 +114,19 @@ export async function getDashboardData(): Promise<{ data: DashboardData | null; 
     const endPrev = startCurrent
 
     // ── Vendas do mês atual ────────────────────────────────────────────
-    const { data: salesCurrent } = await supabase
+    const { data: salesCurrent } = await (supabase as any)
       .from('sales')
       .select('id, total_amount')
       .eq('company_id', companyId)
       .eq('status', 'COMPLETED')
       .gte('created_at', startCurrent)
 
-    const salesRevenue = (salesCurrent ?? []).reduce((s, r) => s + (r.total_amount ?? 0), 0)
+    const salesRevenue = (salesCurrent ?? []).reduce((s: number, r: any) => s + (r.total_amount ?? 0), 0)
     const salesCount = (salesCurrent ?? []).length
     const avgTicket = salesCount > 0 ? salesRevenue / salesCount : 0
 
     // ── Vendas do mês anterior ─────────────────────────────────────────
-    const { data: salesPrev } = await supabase
+    const { data: salesPrev } = await (supabase as any)
       .from('sales')
       .select('id, total_amount')
       .eq('company_id', companyId)
@@ -132,7 +134,7 @@ export async function getDashboardData(): Promise<{ data: DashboardData | null; 
       .gte('created_at', startPrev)
       .lt('created_at', endPrev)
 
-    const salesRevenuePrev = (salesPrev ?? []).reduce((s, r) => s + (r.total_amount ?? 0), 0)
+    const salesRevenuePrev = (salesPrev ?? []).reduce((s: number, r: any) => s + (r.total_amount ?? 0), 0)
     const salesCountPrev = (salesPrev ?? []).length
     const avgTicketPrev = salesCountPrev > 0 ? salesRevenuePrev / salesCountPrev : 0
 
@@ -141,33 +143,33 @@ export async function getDashboardData(): Promise<{ data: DashboardData | null; 
     let grossMarginPrev = 0
 
     if (salesCount > 0) {
-      const saleIds = (salesCurrent ?? []).map(s => s.id)
-      const { data: itemsCurrent } = await supabase
+      const saleIds = (salesCurrent ?? []).map((s: any) => s.id)
+      const { data: itemsCurrent } = await (supabase as any)
         .from('sale_items')
         .select('quantity, unit_price, unit_cost, discount_amount')
         .in('sale_id', saleIds)
 
       const totalRevCurrent = (itemsCurrent ?? []).reduce(
-        (s, i) => s + ((i.unit_price ?? 0) * (i.quantity ?? 0)) - (i.discount_amount ?? 0), 0
+        (s: number, i: any) => s + ((i.unit_price ?? 0) * (i.quantity ?? 0)) - (i.discount_amount ?? 0), 0
       )
       const totalCostCurrent = (itemsCurrent ?? []).reduce(
-        (s, i) => s + ((i.unit_cost ?? 0) * (i.quantity ?? 0)), 0
+        (s: number, i: any) => s + ((i.unit_cost ?? 0) * (i.quantity ?? 0)), 0
       )
       grossMargin = totalRevCurrent > 0 ? ((totalRevCurrent - totalCostCurrent) / totalRevCurrent) * 100 : 0
     }
 
     if (salesCountPrev > 0) {
-      const saleIdsPrev = (salesPrev ?? []).map(s => s.id)
-      const { data: itemsPrev } = await supabase
+      const saleIdsPrev = (salesPrev ?? []).map((s: any) => s.id)
+      const { data: itemsPrev } = await (supabase as any)
         .from('sale_items')
         .select('quantity, unit_price, unit_cost, discount_amount')
         .in('sale_id', saleIdsPrev)
 
       const totalRevPrev = (itemsPrev ?? []).reduce(
-        (s, i) => s + ((i.unit_price ?? 0) * (i.quantity ?? 0)) - (i.discount_amount ?? 0), 0
+        (s: number, i: any) => s + ((i.unit_price ?? 0) * (i.quantity ?? 0)) - (i.discount_amount ?? 0), 0
       )
       const totalCostPrev = (itemsPrev ?? []).reduce(
-        (s, i) => s + ((i.unit_cost ?? 0) * (i.quantity ?? 0)), 0
+        (s: number, i: any) => s + ((i.unit_cost ?? 0) * (i.quantity ?? 0)), 0
       )
       grossMarginPrev = totalRevPrev > 0 ? ((totalRevPrev - totalCostPrev) / totalRevPrev) * 100 : 0
     }
@@ -242,7 +244,7 @@ export async function getDashboardData(): Promise<{ data: DashboardData | null; 
 
     // Recommendations from AI table (if exists)
     let recommendations: RecommendationItem[] = []
-    const { data: aiRecs } = await supabase
+    const { data: aiRecs } = await (supabase as any)
       .from('ai_recommendations')
       .select('*')
       .eq('company_id', companyId)
@@ -251,7 +253,7 @@ export async function getDashboardData(): Promise<{ data: DashboardData | null; 
       .limit(5)
 
     if (aiRecs && aiRecs.length > 0) {
-      recommendations = aiRecs.map(r => ({
+      recommendations = aiRecs.map((r: any) => ({
         id: r.id,
         type: r.type,
         title: r.title,
@@ -304,14 +306,14 @@ export async function getDashboardData(): Promise<{ data: DashboardData | null; 
     }
 
     // Recent activity from stock movements
-    const { data: movements } = await supabase
+    const { data: movements } = await (supabase as any)
       .from('stock_movements')
       .select('id, type, quantity, notes, created_at, product_id, products(name)')
       .eq('company_id', companyId)
       .order('created_at', { ascending: false })
       .limit(8)
 
-    const recentActivity: RecentActivityItem[] = (movements ?? []).map(m => {
+    const recentActivity: RecentActivityItem[] = (movements ?? []).map((m: any) => {
       const product = Array.isArray(m.products) ? m.products[0] : m.products
       const productName = product?.name ?? 'Produto'
       const typeLabel: Record<string, string> = {
@@ -332,7 +334,7 @@ export async function getDashboardData(): Promise<{ data: DashboardData | null; 
     })
 
     // Categories count
-    const { count: categoriesCount } = await supabase
+    const { count: categoriesCount } = await (supabase as any)
       .from('categories')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', companyId)

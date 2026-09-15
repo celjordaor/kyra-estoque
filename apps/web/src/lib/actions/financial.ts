@@ -13,11 +13,12 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
   return { supabase, admin, companyId: profile.company_id as string }
 }
@@ -77,7 +78,7 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
   }
 
   const { supabase, companyId } = ctx
-  const { data: txs } = await supabase
+  const { data: txs } = await (supabase as any)
     .from('financial_transactions')
     .select('type, amount_cents, status, due_date')
     .eq('company_id', companyId)
@@ -127,7 +128,7 @@ export async function getTransactions(params?: {
   const page = params?.page ?? 0
   const pageSize = params?.pageSize ?? 50
 
-  let query = supabase
+  let query = (supabase as any)
     .from('financial_transactions')
     .select('*', { count: 'exact' })
     .eq('company_id', companyId)
@@ -148,7 +149,7 @@ export async function getTransactions(params?: {
 export async function getAccounts(): Promise<FinancialAccount[]> {
   const { supabase, companyId } = await assertFinancialEnabled()
 
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from('financial_accounts')
     .select('*')
     .eq('company_id', companyId)
@@ -167,13 +168,13 @@ export async function createAccount(data: {
 }): Promise<{ data?: FinancialAccount; error?: string }> {
   const { supabase, companyId } = await assertFinancialEnabled()
 
-  const { data: account, error } = await supabase
+  const { data: account, error } = await (supabase as any)
     .from('financial_accounts')
     .insert({ company_id: companyId, name: data.name, type: data.type, balance_cents: data.balance_cents ?? 0 })
     .select()
     .single()
 
-  if (error) return { error: error.message }
+  if (error) return { error: (error as any).message ?? String(error) }
   return { data: account as FinancialAccount }
 }
 
@@ -215,7 +216,7 @@ export async function createTransaction(data: {
     }
   }
 
-  const { data: tx, error } = await supabase
+  const { data: tx, error } = await (supabase as any)
     .from('financial_transactions')
     .insert({
       company_id: companyId,
@@ -232,7 +233,7 @@ export async function createTransaction(data: {
     .select()
     .single()
 
-  if (error) return { error: error.message }
+  if (error) return { error: (error as any).message ?? String(error) }
   return { data: tx as FinancialTransaction, charge: chargeResult }
 }
 
@@ -241,13 +242,13 @@ export async function createTransaction(data: {
 export async function markAsPaid(transactionId: string, paidAt?: string): Promise<{ error?: string }> {
   const { supabase, companyId } = await assertFinancialEnabled()
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('financial_transactions')
     .update({ status: 'paid', paid_at: paidAt ?? new Date().toISOString() })
     .eq('id', transactionId)
     .eq('company_id', companyId)
 
-  if (error) return { error: error.message }
+  if (error) return { error: (error as any).message ?? String(error) }
   return {}
 }
 
@@ -256,7 +257,7 @@ export async function markAsPaid(transactionId: string, paidAt?: string): Promis
 export async function cancelTransaction(transactionId: string): Promise<{ error?: string }> {
   const { supabase, companyId } = await assertFinancialEnabled()
 
-  const { data: tx } = await supabase
+  const { data: tx } = await (supabase as any)
     .from('financial_transactions')
     .select('provider_charge_id')
     .eq('id', transactionId)
@@ -272,13 +273,13 @@ export async function cancelTransaction(transactionId: string): Promise<{ error?
     }
   }
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('financial_transactions')
     .update({ status: 'canceled' })
     .eq('id', transactionId)
     .eq('company_id', companyId)
 
-  if (error) return { error: error.message }
+  if (error) return { error: (error as any).message ?? String(error) }
   return {}
 }
 

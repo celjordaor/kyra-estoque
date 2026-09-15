@@ -76,7 +76,7 @@ export function parseNfeXml(xmlString: string): NfeParseResult {
 
   // Data de emissão: dhEmi ou dEmi
   const dhEmi = getTagText(infNFe, 'dhEmi') || getTagText(infNFe, 'dEmi')
-  const dataEmissao = dhEmi ? dhEmi.split('T')[0] : ''
+  const dataEmissao = dhEmi ? dhEmi.split('T')[0]! : ''
 
   // Items
   const detEls = findAllElements(infNFe, 'det')
@@ -144,8 +144,8 @@ function parseXmlString(xml: string): SimpleElement {
 function parseElement(xml: string): SimpleElement | null {
   const tagMatch = xml.match(/^<([^\s/>]+)([^>]*)>/)
   if (!tagMatch) return null
-  const tag = tagMatch[1]
-  const attrsStr = tagMatch[2]
+  const tag = tagMatch[1]!
+  const attrsStr = tagMatch[2] ?? ''
   const attrs = parseAttrs(attrsStr)
   const inner = xml.slice(tagMatch[0].length, xml.lastIndexOf(`</${tag}>`))
   const children = parseChildren(inner)
@@ -157,7 +157,9 @@ function parseAttrs(s: string): Record<string, string> {
   const attrs: Record<string, string> = {}
   const re = /([a-zA-Z_:][a-zA-Z0-9_:.-]*)="([^"]*)"/g
   let m: RegExpExecArray | null
-  while ((m = re.exec(s)) !== null) attrs[m[1]] = m[2]
+  while ((m = re.exec(s)) !== null) {
+    if (m[1] !== undefined) attrs[m[1]] = m[2] ?? ''
+  }
   return attrs
 }
 
@@ -167,9 +169,10 @@ function parseChildren(inner: string): SimpleElement[] {
   let m: RegExpExecArray | null
   let i = 0
   while ((m = tagRe.exec(inner)) !== null) {
-    const rawTag = m[1]
+    const rawTag = m[1]!
     if (rawTag.startsWith('/') || rawTag.endsWith('/')) continue
-    const tag = rawTag.split(/\s/)[0]
+    const tag = rawTag.split(/\s/)[0] ?? ''
+    if (!tag) continue
     const start = m.index
     const closeTag = `</${tag}>`
     const end = inner.indexOf(closeTag, start)

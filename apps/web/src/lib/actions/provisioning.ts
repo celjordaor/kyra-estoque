@@ -31,11 +31,12 @@ async function requireSuperAdmin() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('is_super_admin')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { is_super_admin: boolean | null } | null
   if (!profile?.is_super_admin) throw new Error('Acesso restrito')
   return { admin, userId: user.id }
 }
@@ -77,7 +78,7 @@ async function logStep(
   currentStep?: string,
 ) {
   // Fetch existing log array then append (JSONB array concat)
-  const { data: job } = await admin
+  const { data: job } = await (admin as any)
     .from('provisioning_jobs')
     .select('steps_log')
     .eq('id', jobId)
@@ -86,7 +87,7 @@ async function logStep(
   const existing: StepLog[] = Array.isArray(job?.steps_log) ? (job.steps_log as StepLog[]) : []
   existing.push(stepLog)
 
-  await admin
+  await (admin as any)
     .from('provisioning_jobs')
     .update({
       steps_log: existing as unknown as any,
@@ -102,7 +103,7 @@ export async function provisionTenant(
   const { admin, userId } = await requireSuperAdmin()
 
   // ── Idempotência: verificar slug já existente ─────────────────
-  const { data: existing } = await admin
+  const { data: existing } = await (admin as any)
     .from('companies')
     .select('id')
     .eq('slug', input.company_slug)
@@ -116,7 +117,7 @@ export async function provisionTenant(
   }
 
   // ── Criar job de provisionamento ──────────────────────────────
-  const { data: job, error: jobErr } = await admin
+  const { data: job, error: jobErr } = await (admin as any)
     .from('provisioning_jobs')
     .insert({
       input: input as unknown as any,
@@ -138,7 +139,7 @@ export async function provisionTenant(
   // ── Utilitário de falha ───────────────────────────────────────
   async function fail(step: string, error: string): Promise<ProvisionTenantResult> {
     await logStep(admin, jobId, { step, status: 'failed', ts: new Date().toISOString(), error })
-    await admin
+    await (admin as any)
       .from('provisioning_jobs')
       .update({ status: 'failed', error_message: error, current_step: step, company_id: companyId ?? null })
       .eq('id', jobId)
@@ -156,7 +157,7 @@ export async function provisionTenant(
     advanced_mode: false,
   }
 
-  const { data: company, error: companyErr } = await admin
+  const { data: company, error: companyErr } = await (admin as any)
     .from('companies')
     .insert({
       name: input.company_name,
@@ -179,7 +180,7 @@ export async function provisionTenant(
   // STEP 2 — Buscar plano
   // FIX: coluna chama-se "active" (não "is_active"), e "price_cents" não existe em plans
   // ══════════════════════════════════════════════════════════════
-  const { data: plan, error: planErr } = await admin
+  const { data: plan, error: planErr } = await (admin as any)
     .from('plans')
     .select('id, name')
     .eq('slug', input.plan_slug)
@@ -202,7 +203,7 @@ export async function provisionTenant(
     : null
   const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()).toISOString()
 
-  const { error: subErr } = await admin
+  const { error: subErr } = await (admin as any)
     .from('subscriptions')
     .insert({
       company_id: companyId,
@@ -241,7 +242,7 @@ export async function provisionTenant(
   // ══════════════════════════════════════════════════════════════
   // STEP 5 — Criar perfil
   // ══════════════════════════════════════════════════════════════
-  const { error: profileErr } = await admin
+  const { error: profileErr } = await (admin as any)
     .from('profiles')
     .insert({
       id: newUserId,
@@ -262,9 +263,7 @@ export async function provisionTenant(
   // ══════════════════════════════════════════════════════════════
   // STEP 6 — Seed onboarding checkpoints (D0-D21)
   // ══════════════════════════════════════════════════════════════
-  const { error: onboardErr } = await admin.rpc('seed_onboarding_checkpoints', {
-    p_company_id: companyId,
-  })
+  const { error: onboardErr } = await (admin as any).rpc('seed_onboarding_checkpoints' as any, { p_company_id: companyId } as any)
 
   if (onboardErr) {
     // Não fatal — loga e continua
@@ -335,7 +334,7 @@ export async function provisionTenant(
   // ══════════════════════════════════════════════════════════════
   // Finalizar job como completed
   // ══════════════════════════════════════════════════════════════
-  await admin
+  await (admin as any)
     .from('provisioning_jobs')
     .update({
       status: 'completed',
@@ -397,7 +396,7 @@ export interface ProvisioningJobRow {
 export async function getProvisioningJobs(): Promise<ProvisioningJobRow[]> {
   const { admin } = await requireSuperAdmin()
 
-  const { data: jobs } = await admin
+  const { data: jobs } = await (admin as any)
     .from('provisioning_jobs')
     .select('id, company_id, status, current_step, error_message, trigger_source, triggered_by, created_at, completed_at')
     .order('created_at', { ascending: false })
@@ -405,12 +404,12 @@ export async function getProvisioningJobs(): Promise<ProvisioningJobRow[]> {
 
   if (!jobs?.length) return []
 
-  const companyIds = [...new Set(jobs.map(j => j.company_id).filter(Boolean))]
-  const userIds = [...new Set(jobs.map(j => j.triggered_by).filter(Boolean))]
+  const companyIds = [...new Set(jobs.map((j: any) => j.company_id).filter(Boolean))]
+  const userIds = [...new Set(jobs.map((j: any) => j.triggered_by).filter(Boolean))]
 
   const [{ data: companies }, usersRes] = await Promise.all([
     companyIds.length
-      ? admin.from('companies').select('id, name').in('id', companyIds as string[])
+      ? (admin as any).from('companies').select('id, name').in('id', companyIds as string[])
       : Promise.resolve({ data: [] }),
     userIds.length
       ? admin.auth.admin.listUsers({ perPage: 1000 } as any)
@@ -420,7 +419,7 @@ export async function getProvisioningJobs(): Promise<ProvisioningJobRow[]> {
   const companyMap = new Map((companies ?? []).map((c: any) => [c.id, c.name]))
   const userMap = new Map(((usersRes as any).data?.users ?? []).map((u: any) => [u.id, u.email]))
 
-  return jobs.map(j => ({
+  return jobs.map((j: any) => ({
     id: j.id,
     company_id: j.company_id,
     company_name: j.company_id ? (companyMap.get(j.company_id) ?? null) : null,

@@ -19,11 +19,12 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
   return { supabase, admin, companyId: profile.company_id as string }
 }
@@ -69,7 +70,7 @@ export async function getNfeDocuments(filter?: {
     hasFeature(companyId, 'nfe.emission.enabled'),
   ])
 
-  let query = admin
+  let query = (admin as any)
     .from('nfe_documents')
     .select(`
       id, doc_type, chave_acesso, numero, serie, data_emissao,
@@ -85,7 +86,7 @@ export async function getNfeDocuments(filter?: {
 
   const { data } = await query
 
-  const docs: NfeDocument[] = (data ?? []).map(d => ({
+  const docs: NfeDocument[] = (data ?? []).map((d: any) => ({
     id:                d.id,
     docType:           d.doc_type as 'import' | 'emission',
     chaveAcesso:       d.chave_acesso,
@@ -127,7 +128,7 @@ export async function importXml(
 
   // Checa duplicidade pela chave de acesso
   if (parsed.chaveAcesso) {
-    const { data: existing } = await admin
+    const { data: existing } = await (admin as any)
       .from('nfe_documents')
       .select('id')
       .eq('chave_acesso', parsed.chaveAcesso)
@@ -135,7 +136,7 @@ export async function importXml(
     if (existing) return { ok: false, error: 'Esta NF-e já foi importada anteriormente.', preview: parsed }
   }
 
-  const { data, error } = await admin
+  const { data, error } = await (admin as any)
     .from('nfe_documents')
     .insert({
       company_id:             companyId,
@@ -182,7 +183,7 @@ export async function emitNfe(input: EmitNfeInput): Promise<{ ok: boolean; error
 
   // Busca dados da venda e da empresa
   const [saleRes, companyRes] = await Promise.all([
-    admin.from('sales').select(`
+    (admin as any).from('sales').select(`
       id, total_amount,
       customer_name, customer_email, customer_phone,
       sale_items (
@@ -190,7 +191,7 @@ export async function emitNfe(input: EmitNfeInput): Promise<{ ok: boolean; error
         products!sale_items_product_id_fkey ( ncm, category_id, categories ( ncm ) )
       )
     `).eq('id', input.saleId).eq('company_id', companyId).single(),
-    admin.from('companies').select('kyra_config, name, document').eq('id', companyId).single(),
+    (admin as any).from('companies').select('kyra_config, name, document').eq('id', companyId).single(),
   ])
 
   if (saleRes.error || !saleRes.data) return { ok: false, error: `Venda não encontrada${saleRes.error ? ': ' + saleRes.error.message : ''}` }
@@ -279,7 +280,7 @@ export async function emitNfe(input: EmitNfeInput): Promise<{ ok: boolean; error
     return { ok: false, error: err instanceof Error ? err.message : 'Erro ao comunicar com o emissor NF-e' }
   }
 
-  const { data, error } = await admin
+  const { data, error } = await (admin as any)
     .from('nfe_documents')
     .insert({
       company_id:       companyId,
@@ -315,7 +316,7 @@ export async function emitNfe(input: EmitNfeInput): Promise<{ ok: boolean; error
 export async function syncNfeStatus(docId: string): Promise<{ ok: boolean; status?: string; error?: string }> {
   const { admin, companyId } = await getServerContext()
 
-  const { data: doc } = await admin
+  const { data: doc } = await (admin as any)
     .from('nfe_documents')
     .select('provider_ref, status')
     .eq('id', docId)
@@ -335,7 +336,7 @@ export async function syncNfeStatus(docId: string): Promise<{ ok: boolean; statu
   }
 
   const newStatus = mapFocusStatus(resp.status ?? '')
-  await admin
+  await (admin as any)
     .from('nfe_documents')
     .update({
       status:           newStatus,
@@ -363,7 +364,7 @@ export async function cancelNfeDoc(
     return { ok: false, error: 'Justificativa deve ter pelo menos 15 caracteres.' }
   }
 
-  const { data: doc } = await admin
+  const { data: doc } = await (admin as any)
     .from('nfe_documents')
     .select('provider_ref, status')
     .eq('id', docId)
@@ -379,7 +380,7 @@ export async function cancelNfeDoc(
     return { ok: false, error: err instanceof Error ? err.message : 'Erro ao cancelar NF-e' }
   }
 
-  await admin
+  await (admin as any)
     .from('nfe_documents')
     .update({ status: 'canceled' })
     .eq('id', docId)
@@ -393,7 +394,7 @@ export async function cancelNfeDoc(
 export async function deleteNfeDoc(docId: string): Promise<{ ok: boolean; error?: string }> {
   const { admin, companyId } = await getServerContext()
 
-  const { data: doc } = await admin
+  const { data: doc } = await (admin as any)
     .from('nfe_documents')
     .select('doc_type, status')
     .eq('id', docId)
@@ -407,7 +408,7 @@ export async function deleteNfeDoc(docId: string): Promise<{ ok: boolean; error?
     return { ok: false, error: 'Não é possível excluir uma NF-e autorizada ou em processamento.' }
   }
 
-  const { error } = await admin
+  const { error } = await (admin as any)
     .from('nfe_documents')
     .delete()
     .eq('id', docId)

@@ -10,9 +10,10 @@ interface StockBadgeProps {
 }
 
 const CONFIG = {
-  out: { variant: 'danger' as const,  label: 'Sem estoque' },
-  low: { variant: 'warning' as const, label: 'Estoque baixo' },
-  ok:  { variant: 'success' as const, label: 'Em estoque' },
+  out:    { variant: 'danger' as const,  label: 'Sem estoque' },
+  low:    { variant: 'warning' as const, label: 'Estoque baixo' },
+  ok:     { variant: 'success' as const, label: 'Em estoque' },
+  excess: { variant: 'info' as const,    label: 'Excesso' },
 }
 
 export function StockBadge({

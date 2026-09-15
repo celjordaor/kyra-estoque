@@ -14,7 +14,7 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profileData } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
@@ -84,7 +84,7 @@ export async function getChannels(): Promise<{
     'loja_integrada', 'instagram', 'whatsapp', 'loja_virtual',
   ]
 
-  const { data: integrations } = await admin
+  const { data: integrations } = await (admin as any)
     .from('company_integrations')
     .select('id, type, is_active, config')
     .eq('company_id', companyId)
@@ -93,7 +93,7 @@ export async function getChannels(): Promise<{
   const today = new Date().toISOString().slice(0, 10)
 
   // Contar pedidos de hoje por integração
-  const channels: ChannelData[] = (integrations ?? []).map(int => {
+  const channels: ChannelData[] = (integrations ?? []).map((int: any) => {
     const cfg = (int.config ?? {}) as Record<string, unknown>
     const hasSyncError = typeof cfg.sync_error === 'string' && cfg.sync_error.length > 0
     return {
@@ -113,6 +113,8 @@ export async function getChannels(): Promise<{
       },
     }
   })
+
+  void today
 
   const activeCount = channels.filter(c => c.is_active).length
   const check = await canUse(companyId, 'channels.max')
@@ -136,7 +138,7 @@ export async function connectChannel(input: ConnectChannelInput): Promise<{
   const { admin, companyId } = await getServerContext()
 
   // Verificar limite de canais
-  const { data: existing } = await admin
+  const { data: existing } = await (admin as any)
     .from('company_integrations')
     .select('id')
     .eq('company_id', companyId)
@@ -172,14 +174,14 @@ export async function connectChannel(input: ConnectChannelInput): Promise<{
     sync_error:         null,
   }
 
-  const { error } = await admin
+  const { error } = await (admin as any)
     .from('company_integrations')
     .upsert(
       { company_id: companyId, type, is_active: true, config },
       { onConflict: 'company_id,type' }
     )
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: (error as any).message ?? String(error) }
 
   revalidatePath('/channels')
   return { ok: true }
@@ -190,13 +192,13 @@ export async function connectChannel(input: ConnectChannelInput): Promise<{
 export async function disconnectChannel(integrationId: string): Promise<{ ok: boolean; error?: string }> {
   const { admin, companyId } = await getServerContext()
 
-  const { error } = await admin
+  const { error } = await (admin as any)
     .from('company_integrations')
     .update({ is_active: false, config: {} })
     .eq('id', integrationId)
     .eq('company_id', companyId)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: (error as any).message ?? String(error) }
 
   revalidatePath('/channels')
   return { ok: true }
@@ -211,7 +213,7 @@ export async function updateChannelConfig(
   const { admin, companyId } = await getServerContext()
 
   // Buscar config atual
-  const { data: intData } = await admin
+  const { data: intData } = await (admin as any)
     .from('company_integrations')
     .select('config')
     .eq('id', integrationId)
@@ -228,13 +230,13 @@ export async function updateChannelConfig(
     auto_publish: sync_config.auto_publish,
   }
 
-  const { error } = await admin
+  const { error } = await (admin as any)
     .from('company_integrations')
     .update({ config: newConfig })
     .eq('id', integrationId)
     .eq('company_id', companyId)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: (error as any).message ?? String(error) }
 
   revalidatePath('/channels')
   return { ok: true }
@@ -248,7 +250,7 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
   const { admin, companyId } = await getServerContext()
 
   // 1. Busca a integração
-  const { data: intData2 } = await admin
+  const { data: intData2 } = await (admin as any)
     .from('company_integrations')
     .select('config, type')
     .eq('id', integrationId)
@@ -270,7 +272,7 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
       )
 
       // 2a. Busca listings ativos com estoque do produto
-      const { data: listings } = await admin
+      const { data: listings } = await (admin as any)
         .from('channel_listings')
         .select(`
           id,
@@ -305,7 +307,7 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
 
       // 2c. Atualiza sync_error por listing
       for (const r of stockResults) {
-        await admin
+        await (admin as any)
           .from('channel_listings')
           .update({
             last_synced_at: new Date().toISOString(),
@@ -333,7 +335,7 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
           raw_payload: o.rawPayload,
         }))
 
-        await admin
+        await (admin as any)
           .from('channel_orders')
           .upsert(rows, { onConflict: 'integration_id,external_order_id', ignoreDuplicates: false })
       }
@@ -350,7 +352,7 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
         products_published: listings?.length ?? 0,
       }
 
-      await admin
+      await (admin as any)
         .from('company_integrations')
         .update({ config: newConfig })
         .eq('id', integrationId)
@@ -359,7 +361,7 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
     } catch (err) {
       // Salva o erro de sincronização sem derrubar a integração
       const errMsg = err instanceof Error ? err.message : String(err)
-      await admin
+      await (admin as any)
         .from('company_integrations')
         .update({ config: { ...cfg, sync_error: errMsg, last_sync_at: new Date().toISOString() } })
         .eq('id', integrationId)
@@ -370,7 +372,7 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
     }
   } else {
     // Canal sem adapter (instagram, whatsapp, loja_virtual): só atualiza timestamp
-    await admin
+    await (admin as any)
       .from('company_integrations')
       .update({ config: { ...cfg, last_sync_at: new Date().toISOString(), sync_error: null } })
       .eq('id', integrationId)
@@ -386,7 +388,7 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
 export async function getChannelOrders(integrationId: string) {
   const { admin, companyId } = await getServerContext()
 
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('channel_orders')
     .select('id, external_order_id, status, customer_name, total_cents, items_count, created_at')
     .eq('company_id', companyId)
@@ -402,7 +404,7 @@ export async function getChannelOrders(integrationId: string) {
 export async function getChannelListings(integrationId: string) {
   const { admin, companyId } = await getServerContext()
 
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('channel_listings')
     .select(`
       id, status, external_id, external_url, last_synced_at, sync_error,

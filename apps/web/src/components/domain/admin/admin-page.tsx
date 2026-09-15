@@ -264,7 +264,7 @@ function LeadsTab() {
             <div key={lead.id} className="rounded-xl border border-border bg-card">
               <div className="flex items-start gap-3 p-4 cursor-pointer" onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}>
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
-                  {lead.name[0].toUpperCase()}
+                  {(lead.name?.[0] ?? '').toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">

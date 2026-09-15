@@ -9,9 +9,10 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, companyId: profile.company_id, userId: user.id }
+  return { supabase, companyId: profile.company_id as string, userId: user.id }
 }
 
 export type SaleStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED'
@@ -87,7 +88,7 @@ export async function getSales(filters: SalesFilters = {}): Promise<{ data: Sale
   const start = (page - 1) * per_page
   const end = start + per_page - 1
 
-  let query = supabase
+  let query = (supabase as any)
     .from('sales')
     .select(`
       id, sale_number, status, customer_name, customer_email,
@@ -134,7 +135,7 @@ export async function getSales(filters: SalesFilters = {}): Promise<{ data: Sale
 export async function getSalesSummary(from?: string, to?: string): Promise<SalesSummary> {
   const { supabase, companyId } = await getServerContext()
 
-  let query = supabase
+  let query = (supabase as any)
     .from('sales')
     .select('total_amount, cost_total, margin')
     .eq('company_id', companyId)
@@ -164,7 +165,7 @@ export async function getSalesSummary(from?: string, to?: string): Promise<Sales
 export async function getSaleDetail(id: string): Promise<SaleDetail | null> {
   const { supabase, companyId } = await getServerContext()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('sales')
     .select(`
       id, sale_number, status, customer_name, customer_email, customer_phone,
@@ -185,7 +186,7 @@ export async function getSaleDetail(id: string): Promise<SaleDetail | null> {
   const items = Array.isArray(data.sale_items) ? data.sale_items : []
 
   // Fetch linked emission NF-e (if any)
-  const { data: nfeRow } = await supabase
+  const { data: nfeRow } = await (supabase as any)
     .from('nfe_documents')
     .select('id, status, pdf_url')
     .eq('company_id', companyId)
@@ -242,7 +243,7 @@ export async function refundSale(id: string): Promise<{ success: boolean; error?
     const { supabase, companyId, userId } = await getServerContext()
 
     // Fetch sale + items
-    const { data: sale, error: saleErr } = await supabase
+    const { data: sale, error: saleErr } = await (supabase as any)
       .from('sales')
       .select('id, status, sale_items(product_id, quantity, unit_cost)')
       .eq('company_id', companyId)
@@ -268,12 +269,12 @@ export async function refundSale(id: string): Promise<{ success: boolean; error?
         created_by: userId,
       }))
 
-      const { error: movErr } = await supabase.from('stock_movements').insert(movements)
+      const { error: movErr } = await (supabase as any).from('stock_movements').insert(movements)
       if (movErr) return { success: false, error: movErr.message }
     }
 
     // Update sale status to REFUNDED
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await (supabase as any)
       .from('sales')
       .update({ status: 'REFUNDED' })
       .eq('id', id)
@@ -316,7 +317,7 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
   if (!input.items || input.items.length === 0) throw new Error('Carrinho vazio')
 
   // ── Enforce operation settings ──────────────────────────────
-  const { data: company } = await supabase
+  const { data: company } = await (supabase as any)
     .from('companies')
     .select('require_customer, allow_negative_stock')
     .eq('id', companyId)
@@ -329,7 +330,7 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
   if (company && !company.allow_negative_stock) {
     // Verify sufficient stock for each item
     const productIds = input.items.map(i => i.product_id)
-    const { data: products } = await supabase
+    const { data: products } = await (supabase as any)
       .from('products')
       .select('id, name, stock_quantity')
       .eq('company_id', companyId)
@@ -348,8 +349,8 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
   }
   // ─────────────────────────────────────────────────────────────
 
-  const { data: numData, error: numErr } = await supabase
-    .rpc('generate_sale_number', { p_company_id: companyId })
+  const { data: numData, error: numErr } = await (supabase as any)
+    .rpc('generate_sale_number' as any, { p_company_id: companyId } as any)
   if (numErr) throw new Error(numErr.message)
   const sale_number = numData as string
 
@@ -361,7 +362,7 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
   const cost_total = input.items.reduce((acc, it) => acc + it.unit_cost * it.quantity, 0)
   const margin = total_amount > 0 ? Math.round(((total_amount - cost_total) / total_amount) * 100 * 100) / 100 : 0
 
-  const { data: sale, error: saleErr } = await supabase
+  const { data: sale, error: saleErr } = await (supabase as any)
     .from('sales')
     .insert({
       company_id: companyId,
@@ -387,14 +388,14 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
   if (input.coupon_code) {
     try {
       const code = input.coupon_code.trim()
-      const { data: couponRow } = await supabase
+      const { data: couponRow } = await (supabase as any)
         .from('discount_coupons')
         .select('id, uses_count')
         .eq('company_id', companyId)
         .ilike('code', code)
         .single()
       if (couponRow) {
-        await supabase
+        await (supabase as any)
           .from('discount_coupons')
           .update({ uses_count: couponRow.uses_count + 1 })
           .eq('id', couponRow.id)
@@ -423,7 +424,7 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
     }
   })
 
-  const { error: itemsErr } = await supabase.from('sale_items').insert(saleItems)
+  const { error: itemsErr } = await (supabase as any).from('sale_items').insert(saleItems)
   if (itemsErr) throw new Error(itemsErr.message)
 
   return { id: sale.id, sale_number: sale.sale_number }
@@ -449,7 +450,7 @@ export interface PdvCategory {
 
 export async function getCategoriesForPdv(): Promise<PdvCategory[]> {
   const { supabase, companyId } = await getServerContext()
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from('categories')
     .select('id, name')
     .eq('company_id', companyId)
@@ -460,7 +461,7 @@ export async function getCategoriesForPdv(): Promise<PdvCategory[]> {
 export async function searchProductsForPdv(q: string, categoryId?: string): Promise<PdvProduct[]> {
   const { supabase, companyId } = await getServerContext()
 
-  let query = supabase
+  let query = (supabase as any)
     .from('products')
     .select('id, name, sku, barcode, unit, sale_price, cost_price, stock_quantity, image_url')
     .eq('company_id', companyId)
@@ -494,7 +495,7 @@ export interface PdvCustomer {
 export async function searchCustomersForPdv(q: string): Promise<PdvCustomer[]> {
   const { supabase, companyId } = await getServerContext()
 
-  let query = supabase
+  let query = (supabase as any)
     .from('customers')
     .select('id, name, phone, email, document')
     .eq('company_id', companyId)
@@ -526,7 +527,7 @@ export async function validateCoupon(code: string, orderValue: number): Promise<
   try {
     const { supabase, companyId } = await getServerContext()
 
-    const { data: coupon, error } = await supabase
+    const { data: coupon, error } = await (supabase as any)
       .from('discount_coupons')
       .select('code, description, discount_type, discount_value, min_order_value, max_uses, uses_count, expires_at, is_active')
       .eq('company_id', companyId)

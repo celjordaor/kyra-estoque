@@ -58,7 +58,7 @@ function ReceiveSheet({
   React.useEffect(() => {
     if (order) {
       const init: Record<string, number> = {}
-      order.items.forEach(i => { init[i.product_id] = i.quantity })
+      order.items.forEach(i => { init[i.product_id] = i.quantity ?? 0 })
       setQuantities(init)
     }
   }, [order])
@@ -130,29 +130,29 @@ function ReceiveSheet({
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate">{item.product_name}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Pedido: {item.quantity} un. · {brl(item.unit_cost)}/un.
+                          Pedido: {item.quantity ?? 0} un. · {brl(item.unit_cost)}/un.
                         </p>
                       </div>
                       <div className="w-28 shrink-0">
                         <NumberInput
                           min={0}
-                          max={item.quantity * 2}
+                          max={(item.quantity ?? 0) * 2}
                           showStepper
-                          value={quantities[item.product_id] ?? item.quantity}
+                          value={quantities[item.product_id] ?? (item.quantity ?? 0)}
                           onChange={v => setQuantities(prev => ({ ...prev, [item.product_id]: v }))}
                         />
                       </div>
                     </div>
-                    {(quantities[item.product_id] ?? item.quantity) !== item.quantity && (
+                    {(quantities[item.product_id] ?? (item.quantity ?? 0)) !== (item.quantity ?? 0) && (
                       <p className={cn(
                         'mt-1.5 text-xs',
-                        (quantities[item.product_id] ?? 0) < item.quantity
+                        (quantities[item.product_id] ?? 0) < (item.quantity ?? 0)
                           ? 'text-amber-600 dark:text-amber-400'
                           : 'text-emerald-600 dark:text-emerald-400'
                       )}>
-                        {(quantities[item.product_id] ?? 0) < item.quantity
-                          ? `⚠ Recebendo menos do que o pedido (${item.quantity - (quantities[item.product_id] ?? 0)} pendente)`
-                          : `✓ Recebendo a mais (${(quantities[item.product_id] ?? 0) - item.quantity} extra)`}
+                        {(quantities[item.product_id] ?? 0) < (item.quantity ?? 0)
+                          ? `⚠ Recebendo menos do que o pedido (${(item.quantity ?? 0) - (quantities[item.product_id] ?? 0)} pendente)`
+                          : `✓ Recebendo a mais (${(quantities[item.product_id] ?? 0) - (item.quantity ?? 0)} extra)`}
                       </p>
                     )}
                   </div>
@@ -195,7 +195,7 @@ function DetailSheet({
   onAdvance: () => void
 }) {
   if (!order) return null
-  const st = STATUS_LABELS[order.status] ?? STATUS_LABELS.draft
+  const st = STATUS_LABELS[order.status] ?? STATUS_LABELS['draft']!
 
   const isDraft     = order.status === 'draft'
   const canReceive  = order.status === 'sent' || order.status === 'confirmed'
@@ -256,7 +256,7 @@ function DetailSheet({
                   <div key={item.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5 text-sm">
                     <div>
                       <p className="font-medium">{item.product_name}</p>
-                      <p className="text-xs text-muted-foreground">{item.quantity} un. × {brl(item.unit_cost)}</p>
+                      <p className="text-xs text-muted-foreground">{item.quantity ?? 0} un. × {brl(item.unit_cost)}</p>
                     </div>
                     <p className="font-semibold">{brl(item.total)}</p>
                   </div>
@@ -304,7 +304,7 @@ function DetailSheet({
             <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
           )}
           {canAdvance && (
-            <Button onClick={onAdvance} variant={isDraft ? 'outline' : 'default'} className="gap-2">
+            <Button onClick={onAdvance} variant={isDraft ? 'outline' : 'primary'} className="gap-2">
               <CheckCircle2 className="h-4 w-4" />
               {advanceLabel}
             </Button>
@@ -505,7 +505,7 @@ export function PurchasesPage() {
               : []),
           ]}
           actions={
-            <Button size="sm" variant="default" onClick={() => setShowSuggestions(v => !v)}>
+            <Button size="sm" variant="primary" onClick={() => setShowSuggestions(v => !v)}>
               {showSuggestions ? 'Ocultar sugestões' : 'Ver sugestões'}
             </Button>
           }
@@ -590,7 +590,7 @@ export function PurchasesPage() {
               </thead>
               <tbody>
                 {orders.map(o => {
-                  const st = STATUS_LABELS[o.status] ?? STATUS_LABELS.draft
+                  const st = STATUS_LABELS[o.status] ?? STATUS_LABELS['draft']!
                   const canReceive = o.status === 'sent' || o.status === 'confirmed'
                   return (
                     <tr
@@ -667,7 +667,7 @@ export function PurchasesPage() {
           </SheetHeader>
           <SheetBody>
             <div className="space-y-5">
-              <FormField label="Fornecedor">
+              <FormField id="supplier_id" label="Fornecedor">
                 <Select value={supplierId} onValueChange={setSupplierId}>
                   <SelectTrigger><SelectValue placeholder="Selecionar fornecedor" /></SelectTrigger>
                   <SelectContent>
@@ -678,11 +678,11 @@ export function PurchasesPage() {
                 </Select>
               </FormField>
 
-              <FormField label="Data prevista de entrega">
+              <FormField id="delivery_date" label="Data prevista de entrega">
                 <Input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
               </FormField>
 
-              <FormField label="Observação">
+              <FormField id="notes" label="Observação">
                 <textarea
                   className="flex min-h-[72px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                   placeholder="Observações sobre o pedido..."
@@ -712,7 +712,7 @@ export function PurchasesPage() {
                             </SelectContent>
                           </Select>
                           <div className="grid grid-cols-2 gap-2">
-                            <FormField label="Qtd">
+                            <FormField id={`qty-${idx}`} label="Qtd">
                               <NumberInput
                                 min={1}
                                 showStepper
@@ -720,7 +720,7 @@ export function PurchasesPage() {
                                 onChange={v => updateItem(idx, 'quantity', v)}
                               />
                             </FormField>
-                            <FormField label="Custo unit.">
+                            <FormField id={`cost-${idx}`} label="Custo unit.">
                               <CurrencyInput
                                 value={item.unit_cost}
                                 onChange={v => updateItem(idx, 'unit_cost', v)}
@@ -749,7 +749,7 @@ export function PurchasesPage() {
                 </div>
               </div>
 
-              <FormField label="Frete (R$)">
+              <FormField id="freight" label="Frete (R$)">
                 <CurrencyInput value={freight} onChange={setFreight} />
               </FormField>
 

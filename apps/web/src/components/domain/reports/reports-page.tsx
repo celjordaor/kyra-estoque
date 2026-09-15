@@ -268,7 +268,7 @@ function EstoqueTab() {
               <tr><td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">Nenhum produto encontrado</td></tr>
             )}
             {rows.map(r => {
-              const st = STOCK_STATUS[r.status]
+              const st = STOCK_STATUS[r.status] ?? { label: r.status, class: '' }
               return (
                 <tr key={r.id} className="hover:bg-muted/30">
                   <Td><span className="font-medium">{r.name}</span></Td>
@@ -459,7 +459,7 @@ function VendasTab() {
                     <Td>{r.category}</Td>
                     <Td right mono>{r.qty_sold}</Td>
                     <Td right>{fmtCurrency(r.revenue)}</Td>
-                    <Td right className="text-green-600 dark:text-green-400">{fmtCurrency(r.profit)}</Td>
+                    <Td right><span className="text-green-600 dark:text-green-400">{fmtCurrency(r.profit)}</span></Td>
                     <Td right>
                       <span className={cn(r.margin_pct >= 30 ? 'text-green-600 dark:text-green-400' : r.margin_pct >= 15 ? 'text-amber-600' : 'text-red-600')}>
                         {fmtPct(r.margin_pct)}
@@ -712,7 +712,7 @@ function ParadosTab() {
   async function handleExport() {
     setExporting(true)
     try {
-      const { csv, filename } = await exportReportCsv('slow_moving', { days_stopped: days })
+      const { csv, filename } = await exportReportCsv('slow_moving', { days_stopped: days.toString() })
       const blob = new Blob([csv], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a'); a.href = url; a.download = filename; a.click()

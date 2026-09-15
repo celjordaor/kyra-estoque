@@ -81,7 +81,7 @@ export function AttentionSection({ items }: AttentionSectionProps) {
                   <p className="text-xs text-slate-600 leading-relaxed">{item.description}</p>
                   {item.href && item.action && (
                     <Link
-                      href={item.href}
+                      href={item.href as any}
                       className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors"
                     >
                       {item.action}

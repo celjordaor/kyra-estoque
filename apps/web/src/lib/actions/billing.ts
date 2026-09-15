@@ -9,10 +9,10 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profileData } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
   const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, admin, companyId: profile.company_id, userId: user.id }
+  return { supabase, admin, companyId: profile.company_id as string, userId: user.id }
 }
 
 // ── Types ──────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
     const { admin, companyId } = await getServerContext()
     console.log('[billing] step 2: companyId =', companyId)
 
-    const { data: sub, error: subErr } = await admin
+    const { data: sub, error: subErr } = await (admin as any)
       .from('subscriptions')
       .select(`
         id, plan_id, status, trial_ends_at, current_period_start, current_period_end,
@@ -78,8 +78,8 @@ export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
     console.log('[billing] step 5: entMap financial.enabled =', entMap['financial.enabled'])
 
     const [{ count: productCount }, { count: userCount }] = await Promise.all([
-      admin.from('products').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
-      admin.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
+      (admin as any).from('products').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
+      (admin as any).from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
     ])
 
     console.log('[billing] step 6: productCount =', productCount, 'userCount =', userCount)

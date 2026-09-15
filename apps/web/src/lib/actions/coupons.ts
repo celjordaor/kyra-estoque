@@ -10,9 +10,10 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, companyId: profile.company_id }
+  return { supabase, companyId: profile.company_id as string }
 }
 
 export interface CouponRow {
@@ -43,7 +44,7 @@ export interface CouponInput {
 // ── List ──────────────────────────────────────────────────────
 export async function getCoupons(): Promise<CouponRow[]> {
   const { supabase, companyId } = await getServerContext()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('discount_coupons')
     .select('id, code, description, discount_type, discount_value, min_order_value, max_uses, uses_count, expires_at, is_active, created_at')
     .eq('company_id', companyId)
@@ -56,7 +57,7 @@ export async function getCoupons(): Promise<CouponRow[]> {
 export async function createCoupon(input: CouponInput): Promise<{ success: boolean; error?: string }> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { error } = await supabase.from('discount_coupons').insert({
+    const { error } = await (supabase as any).from('discount_coupons').insert({
       company_id: companyId,
       code: input.code.trim().toUpperCase(),
       description: input.description?.trim() || null,
@@ -89,7 +90,7 @@ export async function updateCoupon(id: string, input: Partial<CouponInput>): Pro
     if (input.expires_at !== undefined) payload.expires_at = input.expires_at || null
     if (input.is_active !== undefined) payload.is_active = input.is_active
 
-    const { error } = await supabase.from('discount_coupons').update(payload).eq('id', id).eq('company_id', companyId)
+    const { error } = await (supabase as any).from('discount_coupons').update(payload).eq('id', id).eq('company_id', companyId)
     if (error) return { success: false, error: error.message }
     revalidatePath('/settings')
     return { success: true }
@@ -102,7 +103,7 @@ export async function updateCoupon(id: string, input: Partial<CouponInput>): Pro
 export async function deleteCoupon(id: string): Promise<{ success: boolean; error?: string }> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { error } = await supabase.from('discount_coupons').delete().eq('id', id).eq('company_id', companyId)
+    const { error } = await (supabase as any).from('discount_coupons').delete().eq('id', id).eq('company_id', companyId)
     if (error) return { success: false, error: error.message }
     revalidatePath('/settings')
     return { success: true }

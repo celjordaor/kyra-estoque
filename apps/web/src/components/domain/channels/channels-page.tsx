@@ -475,7 +475,7 @@ function ChannelDetail({ channel, onBack, onDisconnect, onConfigChange, onSync }
   const [tab, setTab] = React.useState<DetailTab>('overview')
   const [config, setConfig] = React.useState<ChannelSyncConfig>(channel.sync_config)
   const [syncing, setSyncing] = React.useState(false)
-  const [orders, setOrders] = React.useState<Awaited<ReturnType<typeof getChannelOrders>>>([])
+  const [orders, setOrders] = React.useState<Array<{ id: string; external_order_id: string; customer_name: string | null; total_cents: number | null; status: string }>>([])
   const [listings, setListings] = React.useState<Awaited<ReturnType<typeof getChannelListings>>>([])
   const [loadingTab, setLoadingTab] = React.useState(false)
   const meta = CHANNEL_META[channel.type]
@@ -485,7 +485,7 @@ function ChannelDetail({ channel, onBack, onDisconnect, onConfigChange, onSync }
   React.useEffect(() => {
     if (tab === 'orders' && orders.length === 0) {
       setLoadingTab(true)
-      getChannelOrders(channel.id).then(setOrders).finally(() => setLoadingTab(false))
+      getChannelOrders(channel.id).then(data => setOrders(data as Array<{ id: string; external_order_id: string; customer_name: string | null; total_cents: number | null; status: string }>)).finally(() => setLoadingTab(false))
     }
     if (tab === 'products' && listings.length === 0) {
       setLoadingTab(true)
@@ -790,7 +790,7 @@ export function ChannelsPage() {
         icon={Globe}
         title="Canais"
         description="Gerencie os canais de venda conectados ao Kyra Estoque."
-        action={
+        actions={
           <Button onClick={() => setView('wizard')} className="gap-2" disabled={!canAddMore}>
             <Plus className="h-4 w-4" />
             Conectar canal

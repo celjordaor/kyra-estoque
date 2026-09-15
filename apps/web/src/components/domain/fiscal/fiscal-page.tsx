@@ -85,7 +85,7 @@ function UpgradeNotice({ feature }: { feature: string }) {
       <p className="text-sm text-muted-foreground max-w-xs">
         {feature} está disponível nos planos <strong>Impulsiona</strong> e <strong>Escala</strong>.
       </p>
-      <Button variant="default" size="sm" onClick={() => toast.info('Acesse Configurações → Plano para fazer upgrade.')}>
+      <Button variant="primary" size="sm" onClick={() => toast.info('Acesse Configurações → Plano para fazer upgrade.')}>
         Ver planos
       </Button>
     </div>

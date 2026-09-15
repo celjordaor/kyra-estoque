@@ -28,7 +28,7 @@ export function isValidCnpj(v: string): boolean {
   const d = v.replace(/\D/g, '')
   if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false
   function calcDigit(base: string, weights: number[]) {
-    const sum = base.split('').reduce((acc, ch, i) => acc + Number(ch) * weights[i], 0)
+    const sum = base.split('').reduce((acc, ch, i) => acc + Number(ch) * (weights[i] ?? 0), 0)
     const rem = sum % 11
     return rem < 2 ? 0 : 11 - rem
   }

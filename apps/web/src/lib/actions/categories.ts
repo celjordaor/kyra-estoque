@@ -11,16 +11,17 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, companyId: profile.company_id }
+  return { supabase, companyId: profile.company_id as string }
 }
 
 export async function getCategoriesAdmin(filters: { search?: string; status?: 'active' | 'inactive' | 'all' } = {}) {
   const { supabase, companyId } = await getServerContext()
   const { search, status = 'all' } = filters
 
-  let query = supabase.from('categories').select('*', { count: 'exact' }).eq('company_id', companyId)
+  let query = (supabase as any).from('categories').select('*', { count: 'exact' }).eq('company_id', companyId)
   if (status !== 'all') query = query.eq('is_active', status === 'active')
   if (search) query = query.ilike('name', `%${search}%`)
   query = query.order('name')
@@ -34,7 +35,7 @@ export async function createCategory(values: { name: string; description?: strin
   try {
     const { supabase, companyId } = await getServerContext()
     const slug = values.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const { error } = await supabase.from('categories').insert({
+    const { error } = await (supabase as any).from('categories').insert({
       ...values,
       slug,
       company_id: companyId,
@@ -55,7 +56,7 @@ export async function updateCategory(id: string, values: { name?: string; descri
     const { supabase, companyId } = await getServerContext()
     const update: Record<string, unknown> = { ...values }
     if (values.name) update.slug = values.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const { error } = await supabase.from('categories').update(update).eq('id', id).eq('company_id', companyId)
+    const { error } = await (supabase as any).from('categories').update(update).eq('id', id).eq('company_id', companyId)
     if (error) return { success: false, error: error.message }
     revalidatePath('/settings')
     revalidatePath('/products')
@@ -74,7 +75,7 @@ export async function deleteCategory(id: string): Promise<{ success: boolean; er
 export async function searchCategories(q: string): Promise<{ id: string; name: string }[]> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('categories')
       .select('id, name')
       .eq('company_id', companyId)
@@ -94,7 +95,7 @@ export async function createCategoryAndReturn(
   try {
     const { supabase, companyId } = await getServerContext()
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('categories')
       .insert({ name, slug, company_id: companyId, sort_order: 0, is_active: true })
       .select('id')
@@ -112,7 +113,7 @@ export async function createCategoryAndReturn(
 export async function getCategoryNcm(categoryId: string): Promise<string | null> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('categories')
       .select('ncm')
       .eq('id', categoryId)

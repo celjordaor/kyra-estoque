@@ -22,11 +22,13 @@ export async function buildSystemPrompt(companyId: string, isAdvanced: boolean):
   const admin = createAdminSupabaseClient()
 
   // Busca dados da empresa + kyra_config
-  const { data: company } = await admin
+  const { data: companyData } = await (admin as any)
     .from('companies')
     .select('name, kyra_config')
     .eq('id', companyId)
     .single()
+
+  const company = companyData as { name: string; kyra_config: KyraConfig | null } | null
 
   const config = (company?.kyra_config ?? {}) as KyraConfig
   const personaName = config.persona_name || 'Kyra'

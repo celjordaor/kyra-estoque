@@ -10,14 +10,14 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profileData } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('company_id, role')
     .eq('id', user.id)
     .single()
   const profile = profileData as { company_id: string | null; role: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, admin, companyId: profile.company_id, userId: user.id, myRole: profile.role as string }
+  return { supabase, admin, companyId: profile.company_id as string, userId: user.id, myRole: profile.role as string }
 }
 
 // ── Types ──────────────────────────────────────────────────────
@@ -48,12 +48,12 @@ export interface CompanyRole {
 export async function getTeamMembers(): Promise<TeamMember[]> {
   try {
     const { admin, companyId } = await getServerContext()
-    const { data } = await admin
+    const { data } = await (admin as any)
       .from('profiles')
       .select('id, email, full_name, avatar_url, role, is_active, created_at')
       .eq('company_id', companyId)
       .order('created_at', { ascending: true })
-    return (data ?? []).map(p => ({
+    return (data ?? []).map((p: any) => ({
       id: p.id,
       email: p.email,
       fullName: p.full_name || p.email,
@@ -78,13 +78,13 @@ export async function updateMemberRole(
     // Não pode promover para owner
     if (role === 'owner') return { success: false, error: 'Não é possível atribuir papel de proprietário' }
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('profiles')
       .update({ role })
       .eq('id', userId)
       .eq('company_id', companyId)
 
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/settings')
     return { success: true }
   } catch (e) {
@@ -101,21 +101,21 @@ export async function removeMember(
     if (userId === myId) return { success: false, error: 'Não é possível remover a si mesmo' }
 
     // Não pode remover o último owner
-    const { data: targetData } = await admin.from('profiles').select('role').eq('id', userId).eq('company_id', companyId).single()
+    const { data: targetData } = await (admin as any).from('profiles').select('role').eq('id', userId).eq('company_id', companyId).single()
     const target = targetData as { role: string | null } | null
     if (target?.role === 'owner') {
-      const { count } = await admin.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('role', 'owner')
+      const { count } = await (admin as any).from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('role', 'owner')
       if ((count ?? 0) <= 1) return { success: false, error: 'Não é possível remover o único proprietário' }
     }
 
     // Remove: desvincula da empresa (company_id = null, is_active = false)
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from('profiles')
       .update({ company_id: null, is_active: false })
       .eq('id', userId)
       .eq('company_id', companyId)
 
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/settings')
     return { success: true }
   } catch (e) {
@@ -128,13 +128,13 @@ export async function removeMember(
 export async function getRoles(): Promise<CompanyRole[]> {
   try {
     const { admin, companyId } = await getServerContext()
-    const { data } = await admin
+    const { data } = await (admin as any)
       .from('roles')
       .select('id, name, description, permissions, is_default, is_system')
       .eq('company_id', companyId)
       .order('is_system', { ascending: false })
       .order('name')
-    return (data ?? []).map(r => ({
+    return (data ?? []).map((r: any) => ({
       id: r.id,
       name: r.name,
       description: r.description ?? null,
@@ -156,7 +156,7 @@ export async function createRole(input: {
     const { admin, companyId, myRole } = await getServerContext()
     if (!['owner', 'admin'].includes(myRole)) return { success: false, error: 'Sem permissão' }
 
-    const { error } = await admin.from('roles').insert({
+    const { error } = await (admin as any).from('roles').insert({
       company_id: companyId,
       name: input.name.trim(),
       description: input.description?.trim() || null,
@@ -165,7 +165,7 @@ export async function createRole(input: {
       is_default: false,
     })
 
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/settings')
     return { success: true }
   } catch (e) {
@@ -188,13 +188,13 @@ export async function updateRole(
     if (input.isDefault !== undefined) {
       // Desativa is_default em outros roles ao marcar um como padrão
       if (input.isDefault) {
-        await admin.from('roles').update({ is_default: false }).eq('company_id', companyId)
+        await (admin as any).from('roles').update({ is_default: false }).eq('company_id', companyId)
       }
       update.is_default = input.isDefault
     }
 
-    const { error } = await admin.from('roles').update(update).eq('id', roleId).eq('company_id', companyId)
-    if (error) return { success: false, error: error.message }
+    const { error } = await (admin as any).from('roles').update(update).eq('id', roleId).eq('company_id', companyId)
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/settings')
     return { success: true }
   } catch (e) {
@@ -207,12 +207,12 @@ export async function deleteRole(roleId: string): Promise<{ success: boolean; er
     const { admin, companyId, myRole } = await getServerContext()
     if (!['owner', 'admin'].includes(myRole)) return { success: false, error: 'Sem permissão' }
 
-    const { data: roleRowData } = await admin.from('roles').select('is_system').eq('id', roleId).eq('company_id', companyId).single()
+    const { data: roleRowData } = await (admin as any).from('roles').select('is_system').eq('id', roleId).eq('company_id', companyId).single()
     const role = roleRowData as { is_system: boolean } | null
     if (role?.is_system) return { success: false, error: 'Não é possível excluir perfis do sistema' }
 
-    const { error } = await admin.from('roles').delete().eq('id', roleId).eq('company_id', companyId)
-    if (error) return { success: false, error: error.message }
+    const { error } = await (admin as any).from('roles').delete().eq('id', roleId).eq('company_id', companyId)
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/settings')
     return { success: true }
   } catch (e) {
@@ -229,7 +229,7 @@ export async function inviteMember(
     if (!['owner', 'admin'].includes(myRole)) return { success: false, error: 'Sem permissão' }
 
     // Check if already a member of THIS company
-    const { data: existing } = await admin
+    const { data: existing } = await (admin as any)
       .from('profiles')
       .select('id')
       .eq('company_id', companyId)
@@ -293,7 +293,7 @@ export async function inviteMember(
     }
 
     // Upsert profile into this company
-    const { error: profileError } = await admin.from('profiles').upsert(
+    const { error: profileError } = await (admin as any).from('profiles').upsert(
       {
         id: userId,
         company_id: companyId,
@@ -304,7 +304,7 @@ export async function inviteMember(
       },
       { onConflict: 'id' },
     )
-    if (profileError) return { success: false, error: profileError.message }
+    if (profileError) return { success: false, error: (profileError as any).message ?? String(profileError) }
 
     revalidatePath('/settings')
     return { success: true, inviteLink }

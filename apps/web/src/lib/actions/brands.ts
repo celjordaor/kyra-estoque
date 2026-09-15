@@ -11,16 +11,17 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, companyId: profile.company_id }
+  return { supabase, companyId: profile.company_id as string }
 }
 
 export async function getBrands(filters: { search?: string; status?: 'active' | 'inactive' | 'all' } = {}) {
   const { supabase, companyId } = await getServerContext()
   const { search, status = 'active' } = filters
 
-  let query = supabase.from('brands').select('*', { count: 'exact' }).eq('company_id', companyId)
+  let query = (supabase as any).from('brands').select('*', { count: 'exact' }).eq('company_id', companyId)
   if (status !== 'all') query = query.eq('is_active', status === 'active')
   if (search) query = query.ilike('name', `%${search}%`)
   query = query.order('name')
@@ -34,7 +35,7 @@ export async function createBrand(values: { name: string; description?: string }
   try {
     const { supabase, companyId } = await getServerContext()
     const slug = values.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const { error } = await supabase.from('brands').insert({ ...values, slug, company_id: companyId, is_active: true })
+    const { error } = await (supabase as any).from('brands').insert({ ...values, slug, company_id: companyId, is_active: true })
     if (error) return { success: false, error: error.message }
     revalidatePath('/settings')
     return { success: true }
@@ -48,7 +49,7 @@ export async function updateBrand(id: string, values: BrandUpdate): Promise<{ su
     const { supabase, companyId } = await getServerContext()
     const update: BrandUpdate = { ...values }
     if (values.name) update.slug = values.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const { error } = await supabase.from('brands').update(update).eq('id', id).eq('company_id', companyId)
+    const { error } = await (supabase as any).from('brands').update(update).eq('id', id).eq('company_id', companyId)
     if (error) return { success: false, error: error.message }
     revalidatePath('/settings')
     return { success: true }
@@ -66,7 +67,7 @@ export async function deleteBrand(id: string): Promise<{ success: boolean; error
 export async function searchBrands(q: string): Promise<{ id: string; name: string }[]> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('brands')
       .select('id, name')
       .eq('company_id', companyId)
@@ -86,7 +87,7 @@ export async function createBrandAndReturn(
   try {
     const { supabase, companyId } = await getServerContext()
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('brands')
       .insert({ name, slug, company_id: companyId, is_active: true })
       .select('id')

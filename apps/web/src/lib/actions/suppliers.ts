@@ -11,9 +11,10 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, companyId: profile.company_id }
+  return { supabase, companyId: profile.company_id as string }
 }
 
 export async function getSuppliers(filters: { search?: string; status?: 'active' | 'inactive' | 'all'; page?: number; per_page?: number } = {}) {
@@ -22,7 +23,7 @@ export async function getSuppliers(filters: { search?: string; status?: 'active'
   const from = (page - 1) * per_page
   const to = from + per_page - 1
 
-  let query = supabase.from('suppliers').select('*', { count: 'exact' }).eq('company_id', companyId)
+  let query = (supabase as any).from('suppliers').select('*', { count: 'exact' }).eq('company_id', companyId)
   if (status !== 'all') query = query.eq('is_active', status === 'active')
   if (search) query = query.ilike('name', `%${search}%`)
   query = query.order('name').range(from, to)
@@ -35,7 +36,7 @@ export async function getSuppliers(filters: { search?: string; status?: 'active'
 export async function createSupplier(values: Omit<SupplierInsert, 'company_id'>): Promise<{ success: boolean; error?: string }> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { error } = await supabase.from('suppliers').insert({ ...values, company_id: companyId })
+    const { error } = await (supabase as any).from('suppliers').insert({ ...values, company_id: companyId })
     if (error) return { success: false, error: error.message }
     revalidatePath('/suppliers')
     return { success: true }
@@ -47,7 +48,7 @@ export async function createSupplier(values: Omit<SupplierInsert, 'company_id'>)
 export async function updateSupplier(id: string, values: SupplierUpdate): Promise<{ success: boolean; error?: string }> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { error } = await supabase.from('suppliers').update(values).eq('id', id).eq('company_id', companyId)
+    const { error } = await (supabase as any).from('suppliers').update(values).eq('id', id).eq('company_id', companyId)
     if (error) return { success: false, error: error.message }
     revalidatePath('/suppliers')
     return { success: true }

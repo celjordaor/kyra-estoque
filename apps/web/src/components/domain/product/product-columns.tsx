@@ -31,7 +31,7 @@ function StatusBadge({ product }: { product: ProductWithCategory }) {
     active:      { label: 'Ativo',          variant: 'success'   },
     low_stock:   { label: 'Estoque baixo',  variant: 'warning'   },
     out_of_stock:{ label: 'Sem estoque',    variant: 'danger'    },
-    inactive:    { label: 'Inativo',        variant: 'secondary' },
+    inactive:    { label: 'Inativo',        variant: 'neutral' },
   } as const
   const { label, variant } = map[status]
   return <Badge variant={variant}>{label}</Badge>

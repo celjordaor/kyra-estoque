@@ -22,7 +22,7 @@ function ActionButton({ action, variant }: { action: EmptyStateAction; variant: 
   if (action.href) {
     return (
       <Button variant={variant} size="sm" asChild>
-        <Link href={action.href}>{action.label}</Link>
+        <Link href={action.href as any}>{action.label}</Link>
       </Button>
     )
   }

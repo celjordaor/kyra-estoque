@@ -377,7 +377,7 @@ export function StockPage() {
           </SheetHeader>
           <SheetBody>
             <div className="flex flex-col gap-4">
-              <FormField label="Tipo de movimentação">
+              <FormField id="mov-type" label="Tipo de movimentação">
                 <Select value={movType} onValueChange={v => setMovType(v as MovType)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -389,7 +389,7 @@ export function StockPage() {
                 </Select>
               </FormField>
 
-              <FormField label="Produto *">
+              <FormField id="mov-product" label="Produto *">
                 <Select value={movProductId} onValueChange={setMovProductId}>
                   <SelectTrigger><SelectValue placeholder="Selecione o produto" /></SelectTrigger>
                   <SelectContent>
@@ -402,7 +402,7 @@ export function StockPage() {
                 </Select>
               </FormField>
 
-              <FormField label="Quantidade *">
+              <FormField id="mov-qty" label="Quantidade *">
                 <NumberInput
                   allowDecimal
                   decimalPlaces={3}
@@ -413,7 +413,7 @@ export function StockPage() {
                 />
               </FormField>
 
-              <FormField label="Motivo / observação">
+              <FormField id="mov-notes" label="Motivo / observação">
                 <textarea
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder="Ex: compra NF 1234, venda #1048, contagem física..."

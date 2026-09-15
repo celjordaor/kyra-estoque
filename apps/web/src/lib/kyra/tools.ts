@@ -115,7 +115,7 @@ export async function executeTool(
   switch (toolName) {
     case 'get_low_stock_alerts': {
       const limit = (input.limit as number) ?? 15
-      const { data } = await admin
+      const { data } = await (admin as any)
         .from('products')
         .select('id, name, sku, stock_quantity, min_stock, unit, sale_price, cost_price')
         .eq('company_id', companyId)
@@ -126,7 +126,7 @@ export async function executeTool(
 
       return {
         count: data?.length ?? 0,
-        products: (data ?? []).map(p => ({
+        products: (data ?? []).map((p: any) => ({
           id: p.id,
           name: p.name,
           sku: p.sku,
@@ -141,7 +141,7 @@ export async function executeTool(
     case 'get_product_info': {
       const query = input.query as string
       const limit = (input.limit as number) ?? 10
-      const { data } = await admin
+      const { data } = await (admin as any)
         .from('products')
         .select('id, name, sku, stock_quantity, min_stock, sale_price, cost_price, unit, is_active, category:categories(name)')
         .eq('company_id', companyId)
@@ -150,7 +150,7 @@ export async function executeTool(
 
       return {
         count: data?.length ?? 0,
-        products: (data ?? []).map(p => ({
+        products: (data ?? []).map((p: any) => ({
           id: p.id,
           name: p.name,
           sku: p.sku,
@@ -188,7 +188,7 @@ export async function executeTool(
         prevStart = new Date(now.getFullYear(), now.getMonth() - 2, 1)
         prevEnd = new Date(start)
         start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-        const { data: salesData } = await admin
+        const { data: salesData } = await (admin as any)
           .from('sales')
           .select('total_amount, created_at, sale_items(product_id, quantity, unit_price, products(name))')
           .eq('company_id', companyId)
@@ -203,7 +203,7 @@ export async function executeTool(
         prevEnd = new Date(start)
       }
 
-      const { data: salesData } = await admin
+      const { data: salesData } = await (admin as any)
         .from('sales')
         .select('id, total_amount, discount_amount, created_at, sale_items(product_id, quantity, unit_price, products(name))')
         .eq('company_id', companyId)
@@ -211,7 +211,7 @@ export async function executeTool(
         .gte('created_at', start.toISOString())
         .order('created_at', { ascending: false })
 
-      const { data: prevData } = await admin
+      const { data: prevData } = await (admin as any)
         .from('sales')
         .select('total_amount')
         .eq('company_id', companyId)
@@ -219,8 +219,8 @@ export async function executeTool(
         .gte('created_at', prevStart.toISOString())
         .lt('created_at', prevEnd.toISOString())
 
-      const revenue = (salesData ?? []).reduce((s, x) => s + (x.total_amount ?? 0), 0)
-      const prevRevenue = (prevData ?? []).reduce((s, x) => s + (x.total_amount ?? 0), 0)
+      const revenue = (salesData ?? []).reduce((s: number, x: any) => s + (x.total_amount ?? 0), 0)
+      const prevRevenue = (prevData ?? []).reduce((s: number, x: any) => s + (x.total_amount ?? 0), 0)
       const growth = prevRevenue > 0 ? (((revenue - prevRevenue) / prevRevenue) * 100).toFixed(1) : null
 
       // Top products
@@ -229,8 +229,8 @@ export async function executeTool(
         for (const item of (sale as any).sale_items ?? []) {
           const name = item.products?.name ?? 'Desconhecido'
           if (!prodMap[item.product_id]) prodMap[item.product_id] = { name, qty: 0, revenue: 0 }
-          prodMap[item.product_id].qty += item.quantity
-          prodMap[item.product_id].revenue += item.quantity * item.unit_price
+          prodMap[item.product_id]!.qty += item.quantity
+          prodMap[item.product_id]!.revenue += item.quantity * item.unit_price
         }
       }
       const topProducts = Object.values(prodMap)
@@ -252,18 +252,19 @@ export async function executeTool(
       const limit = (input.limit as number) ?? 10
       const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-      // Products below min_stock
-      const { data: lowStock } = await admin
+      // Products below min_stock (informational query — actual filtering done below)
+      const { data: lowStock } = await (admin as any)
         .from('products')
         .select('id, name, sku, stock_quantity, min_stock, cost_price, unit')
         .eq('company_id', companyId)
         .eq('is_active', true)
         .gt('min_stock', 0)
-        .lt('stock_quantity', admin.from('products').select('min_stock'))
         .limit(limit)
 
+      void lowStock // unused — actual query follows
+
       // Sales velocity (last 30 days)
-      const { data: movements } = await admin
+      const { data: movements } = await (admin as any)
         .from('stock_movements')
         .select('product_id, quantity')
         .eq('company_id', companyId)
@@ -271,12 +272,12 @@ export async function executeTool(
         .gte('created_at', thirtyDaysAgo.toISOString())
 
       const velocityMap: Record<string, number> = {}
-      for (const m of movements ?? []) {
+      for (const m of (movements ?? []) as any[]) {
         velocityMap[m.product_id] = (velocityMap[m.product_id] ?? 0) + Math.abs(m.quantity)
       }
 
       // Re-query with proper filter
-      const { data: products } = await admin
+      const { data: products } = await (admin as any)
         .from('products')
         .select('id, name, sku, stock_quantity, min_stock, cost_price, unit')
         .eq('company_id', companyId)
@@ -284,7 +285,7 @@ export async function executeTool(
         .or('stock_quantity.lte.0,and(min_stock.gt.0,stock_quantity.lte.min_stock)')
         .limit(limit)
 
-      const suggestions = (products ?? []).map(p => {
+      const suggestions = ((products ?? []) as any[]).map(p => {
         const dailyVelocity = (velocityMap[p.id] ?? 0) / 30
         const daysLeft = dailyVelocity > 0 ? Math.floor(p.stock_quantity / dailyVelocity) : null
         const suggestedQty = Math.max(
@@ -319,14 +320,14 @@ export async function executeTool(
       if (!items?.length) return { success: false, error: 'Nenhum item fornecido' }
 
       // Get user_id from profiles (use first user of company as created_by)
-      const { data: profile } = await admin
+      const { data: profile } = await (admin as any)
         .from('profiles')
         .select('id')
         .eq('company_id', companyId)
         .limit(1)
         .single()
 
-      const { data: order, error } = await admin
+      const { data: order, error } = await (admin as any)
         .from('purchase_orders')
         .insert({
           company_id: companyId,
@@ -349,11 +350,11 @@ export async function executeTool(
         total_cost: (item.unit_cost ?? 0) * item.quantity,
       }))
 
-      await admin.from('purchase_order_items').insert(orderItems)
+      await (admin as any).from('purchase_order_items').insert(orderItems)
 
       // Update total
       const total = orderItems.reduce((s, x) => s + x.total_cost, 0)
-      await admin.from('purchase_orders').update({ total_amount: total }).eq('id', order.id)
+      await (admin as any).from('purchase_orders').update({ total_amount: total }).eq('id', order.id)
 
       return {
         success: true,
@@ -369,7 +370,7 @@ export async function executeTool(
       const productIds = (input.product_ids as string[]) ?? []
       const sixtyDaysAgo = new Date(); sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
 
-      let movQuery = admin
+      let movQuery = (admin as any)
         .from('stock_movements')
         .select('product_id, quantity, created_at, products(name, unit)')
         .eq('company_id', companyId)
@@ -386,7 +387,7 @@ export async function executeTool(
 
       // Aggregate by product
       const aggMap: Record<string, { name: string; unit: string; total_60d: number }> = {}
-      for (const m of movements ?? []) {
+      for (const m of (movements ?? []) as any[]) {
         if (!aggMap[m.product_id]) {
           aggMap[m.product_id] = {
             name: (m.products as any)?.name ?? 'Desconhecido',
@@ -394,7 +395,7 @@ export async function executeTool(
             total_60d: 0,
           }
         }
-        aggMap[m.product_id].total_60d += Math.abs(m.quantity)
+        aggMap[m.product_id]!.total_60d += Math.abs(m.quantity)
       }
 
       const forecasts = Object.entries(aggMap).map(([id, d]) => ({

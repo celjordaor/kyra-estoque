@@ -181,7 +181,7 @@ function NavLink({
 
   const link = (
     <Link
-      href={item.href}
+      href={item.href as any}
       className={cn(
         'flex h-9 w-full items-center rounded-md transition-colors',
         collapsed ? 'justify-center px-1.5' : 'gap-2 px-1.5',

@@ -27,7 +27,7 @@ export function createServerSupabaseClient(cookieStore: CookieStore) {
   return createServerClient<Database>(url, key, {
     cookies: {
       getAll: () => cookieStore.getAll(),
-      setAll: (cookiesToSet) => {
+      setAll: (cookiesToSet: { name: string; value: string; options: any }[]) => {
         try {
           cookieStore.setAll?.(cookiesToSet)
         } catch {

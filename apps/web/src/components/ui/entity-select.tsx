@@ -156,7 +156,7 @@ export function EntitySelect({
                 if (e.key === 'Escape') setOpen(false)
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  if (results.length === 1) selectItem(results[0])
+                  if (results.length === 1) selectItem(results[0]!)
                   else if (showCreate) handleCreate()
                 }
               }}

@@ -351,10 +351,10 @@ function InviteDialog({ open, onOpenChange, onInvited }: { open: boolean; onOpen
           </div>
         ) : (
           <div className="flex flex-col gap-4 py-2">
-            <FormField label="E-mail *">
+            <FormField id="invite-email" label="E-mail *">
               <Input type="email" placeholder="nome@empresa.com" value={email} onChange={e => setEmail(e.target.value)} />
             </FormField>
-            <FormField label="Cargo">
+            <FormField id="invite-role" label="Cargo">
               <div className="relative">
                 <select
                   value={role}
@@ -652,10 +652,10 @@ function RoleDialog({
         </SheetHeader>
         <SheetBody>
           <div className="flex flex-col gap-4">
-            <FormField label="Nome *">
+            <FormField id="role-name" label="Nome *">
               <Input placeholder="Ex: Vendedor, Caixa, Auditor" value={name} onChange={e => setName(e.target.value)} />
             </FormField>
-            <FormField label="Descrição">
+            <FormField id="role-description" label="Descrição">
               <Input placeholder="Descrição opcional" value={description} onChange={e => setDescription(e.target.value)} />
             </FormField>
             {editing && (
@@ -800,7 +800,7 @@ function CategoriesSection() {
   const [editing, setEditing] = React.useState<CategoryRow | null>(null)
   const [name, setName] = React.useState('')
   const [description, setDescription] = React.useState('')
-  const [color, setColor] = React.useState(CATEGORY_COLORS[0].value)
+  const [color, setColor] = React.useState(CATEGORY_COLORS[0]!.value)
   const [ncm, setNcm] = React.useState('')
   const [deleteTarget, setDeleteTarget] = React.useState<CategoryRow | null>(null)
   const [deleteLoading, setDeleteLoading] = React.useState(false)
@@ -814,8 +814,8 @@ function CategoriesSection() {
 
   React.useEffect(() => { load() }, [load])
 
-  function openNew() { setEditing(null); setName(''); setDescription(''); setColor(CATEGORY_COLORS[0].value); setNcm(''); setFormOpen(true) }
-  function openEdit(c: CategoryRow) { setEditing(c); setName(c.name); setDescription(c.description ?? ''); setColor(c.color ?? CATEGORY_COLORS[0].value); setNcm((c as any).ncm ?? ''); setFormOpen(true) }
+  function openNew() { setEditing(null); setName(''); setDescription(''); setColor(CATEGORY_COLORS[0]!.value); setNcm(''); setFormOpen(true) }
+  function openEdit(c: CategoryRow) { setEditing(c); setName(c.name); setDescription(c.description ?? ''); setColor(c.color ?? CATEGORY_COLORS[0]!.value); setNcm((c as any).ncm ?? ''); setFormOpen(true) }
 
   async function handleSave() {
     if (!name.trim()) { toast.error('Nome é obrigatório'); return }
@@ -879,9 +879,9 @@ function CategoriesSection() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>{editing ? 'Editar categoria' : 'Nova categoria'}</DialogTitle></DialogHeader>
           <div className="flex flex-col gap-4 py-2">
-            <FormField label="Nome *"><Input placeholder="Nome da categoria" value={name} onChange={e => setName(e.target.value)} /></FormField>
-            <FormField label="Descrição"><Input placeholder="Descrição opcional" value={description} onChange={e => setDescription(e.target.value)} /></FormField>
-            <FormField label="NCM" hint="8 dígitos — código tributário dos produtos desta categoria">
+            <FormField id="category-name" label="Nome *"><Input placeholder="Nome da categoria" value={name} onChange={e => setName(e.target.value)} /></FormField>
+            <FormField id="category-description" label="Descrição"><Input placeholder="Descrição opcional" value={description} onChange={e => setDescription(e.target.value)} /></FormField>
+            <FormField id="category-ncm" label="NCM" hint="8 dígitos — código tributário dos produtos desta categoria">
               <Input
                 placeholder="Ex: 61091000"
                 maxLength={8}
@@ -889,7 +889,7 @@ function CategoriesSection() {
                 onChange={e => setNcm(e.target.value.replace(/\D/g, '').slice(0, 8))}
               />
             </FormField>
-            <FormField label="Cor">
+            <FormField id="category-color" label="Cor">
               <div className="flex flex-wrap gap-2">
                 {CATEGORY_COLORS.map(c => (
                   <button key={c.value} type="button" title={c.label}
@@ -989,8 +989,8 @@ function BrandsSection() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>{editing ? 'Editar marca' : 'Nova marca'}</DialogTitle></DialogHeader>
           <div className="flex flex-col gap-4 py-2">
-            <FormField label="Nome *"><Input placeholder="Nome da marca" value={name} onChange={e => setName(e.target.value)} /></FormField>
-            <FormField label="Descrição"><Input placeholder="Descrição opcional" value={description} onChange={e => setDescription(e.target.value)} /></FormField>
+            <FormField id="brand-name" label="Nome *"><Input placeholder="Nome da marca" value={name} onChange={e => setName(e.target.value)} /></FormField>
+            <FormField id="brand-description" label="Descrição"><Input placeholder="Descrição opcional" value={description} onChange={e => setDescription(e.target.value)} /></FormField>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>Cancelar</Button>
@@ -1179,7 +1179,7 @@ function CouponsSection() {
             <DialogTitle>{editing ? 'Editar cupom' : 'Novo cupom'}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
-            <FormField label="Código *">
+            <FormField id="coupon-code" label="Código *">
               <Input
                 placeholder="EX: DESCONTO10"
                 value={code}
@@ -1189,7 +1189,7 @@ function CouponsSection() {
             </FormField>
 
             <div className="flex gap-3">
-              <FormField label="Tipo de desconto" className="flex-1">
+              <FormField id="coupon-discount-type" label="Tipo de desconto" className="flex-1">
                 <div className="flex rounded-lg border border-border overflow-hidden">
                   {(['percent', 'fixed'] as const).map(t => (
                     <button
@@ -1206,7 +1206,7 @@ function CouponsSection() {
                   ))}
                 </div>
               </FormField>
-              <FormField label={discountType === 'percent' ? 'Valor (%)' : 'Valor (R$)'} className="w-28">
+              <FormField id="coupon-discount-value" label={discountType === 'percent' ? 'Valor (%)' : 'Valor (R$)'} className="w-28">
                 <Input
                   type="text"
                   inputMode="decimal"
@@ -1217,18 +1217,18 @@ function CouponsSection() {
               </FormField>
             </div>
 
-            <FormField label="Descrição">
+            <FormField id="coupon-description" label="Descrição">
               <Input placeholder="Ex: Desconto de 10% para novos clientes" value={description} onChange={e => setDescription(e.target.value)} />
             </FormField>
 
             <div className="flex gap-3">
-              <FormField label="Pedido mínimo (R$)" className="flex-1">
+              <FormField id="coupon-min-order" label="Pedido mínimo (R$)" className="flex-1">
                 <Input
                   type="text" inputMode="decimal" placeholder="0,00 (sem mínimo)"
                   value={minOrderValue} onChange={e => setMinOrderValue(e.target.value.replace(/[^0-9,\.]/g, ''))}
                 />
               </FormField>
-              <FormField label="Usos máximos" className="w-28">
+              <FormField id="coupon-max-uses" label="Usos máximos" className="w-28">
                 <Input
                   type="text" inputMode="numeric" placeholder="Ilimitado"
                   value={maxUses} onChange={e => setMaxUses(e.target.value.replace(/\D/g, ''))}
@@ -1237,7 +1237,7 @@ function CouponsSection() {
             </div>
 
             <div className="flex gap-3 items-end">
-              <FormField label="Validade" className="flex-1">
+              <FormField id="coupon-expires-at" label="Validade" className="flex-1">
                 <Input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
               </FormField>
               <div className="flex items-center gap-2 pb-2">
@@ -1536,10 +1536,10 @@ function CompanySection() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-8">
-        <FormField label="Razão social *">
+        <FormField id="company-razao-social" label="Razão social *">
           <Input placeholder="Razão social" value={razaoSocial} onChange={e => setRazaoSocial(e.target.value)} disabled={loading} />
         </FormField>
-        <FormField label="Nome fantasia">
+        <FormField id="company-nome-fantasia" label="Nome fantasia">
           <Input placeholder="Nome fantasia" value={fantasia} onChange={e => setFantasia(e.target.value)} disabled={loading} />
         </FormField>
         <FormField id="company-cnpj" label="CNPJ" error={errors.cnpj}>
@@ -1563,7 +1563,7 @@ function CompanySection() {
             onBlur={() => validateEmail(email)} disabled={loading}
           />
         </FormField>
-        <FormField label="Site">
+        <FormField id="company-site" label="Site">
           <Input placeholder="https://empresa.com" value={website} onChange={e => setWebsite(e.target.value)} disabled={loading} />
         </FormField>
       </div>
@@ -1572,7 +1572,7 @@ function CompanySection() {
       <div className="flex flex-col gap-4">
         <div className="flex items-end gap-3">
           <div className="w-[220px]">
-            <FormField label="CEP">
+            <FormField id="company-cep" label="CEP">
               <CepInput
                 value={cep}
                 onChange={setCep}
@@ -1583,24 +1583,24 @@ function CompanySection() {
           </div>
         </div>
         <div className="grid grid-cols-[1fr_80px_1fr] gap-x-4 gap-y-4">
-          <FormField label="Rua">
+          <FormField id="company-rua" label="Rua">
             <Input placeholder="Rua" value={addr.street} onChange={e => setAddr(a => ({ ...a, street: e.target.value }))} />
           </FormField>
-          <FormField label="Nº">
+          <FormField id="company-numero" label="Nº">
             <Input placeholder="Nº" value={addr.number} onChange={e => setAddr(a => ({ ...a, number: e.target.value }))} />
           </FormField>
-          <FormField label="Complemento">
+          <FormField id="company-complemento" label="Complemento">
             <Input placeholder="Complemento" value={addr.complement} onChange={e => setAddr(a => ({ ...a, complement: e.target.value }))} />
           </FormField>
         </div>
         <div className="grid grid-cols-[1fr_1fr_80px] gap-x-4 gap-y-4">
-          <FormField label="Bairro">
+          <FormField id="company-bairro" label="Bairro">
             <Input placeholder="Bairro" value={addr.neighborhood} onChange={e => setAddr(a => ({ ...a, neighborhood: e.target.value }))} />
           </FormField>
-          <FormField label="Cidade">
+          <FormField id="company-cidade" label="Cidade">
             <Input placeholder="Cidade" value={addr.city} onChange={e => setAddr(a => ({ ...a, city: e.target.value }))} />
           </FormField>
-          <FormField label="UF">
+          <FormField id="company-uf" label="UF">
             <Input placeholder="UF" value={addr.state} maxLength={2} onChange={e => setAddr(a => ({ ...a, state: e.target.value.toUpperCase() }))} />
           </FormField>
         </div>
@@ -1612,13 +1612,13 @@ function CompanySection() {
       <p className="text-xs text-muted-foreground mb-5">Necessário para emitir NF-e. Configure a IE e o regime tributário da empresa.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 mb-4">
-        <FormField label="Inscrição Estadual (IE)">
+        <FormField id="company-ie" label="Inscrição Estadual (IE)">
           <Input placeholder="Ex: 123456789" value={ie} onChange={e => setIe(e.target.value)} disabled={loading} />
         </FormField>
-        <FormField label="Inscrição Municipal (IM)">
+        <FormField id="company-im" label="Inscrição Municipal (IM)">
           <Input placeholder="Opcional" value={im} onChange={e => setIm(e.target.value)} disabled={loading} />
         </FormField>
-        <FormField label="Regime Tributário" className="sm:col-span-2">
+        <FormField id="company-regime-tributario" label="Regime Tributário" className="sm:col-span-2">
           <Select value={regimeTributario} onValueChange={setRegimeTributario}>
             <SelectTrigger disabled={loading}>
               <SelectValue placeholder="Selecione o regime tributário" />
@@ -1630,10 +1630,10 @@ function CompanySection() {
             </SelectContent>
           </Select>
         </FormField>
-        <FormField label="CNAE Principal">
+        <FormField id="company-cnae" label="CNAE Principal">
           <Input placeholder="Ex: 4711-3/01" value={cnae} onChange={e => setCnae(e.target.value)} disabled={loading} />
         </FormField>
-        <FormField label="CFOP Padrão" hint="4 dígitos — natureza da operação fiscal (5102 = venda interna, 6102 = venda interestadual)">
+        <FormField id="company-cfop" label="CFOP Padrão" hint="4 dígitos — natureza da operação fiscal (5102 = venda interna, 6102 = venda interestadual)">
           <Input
             placeholder="Ex: 5102"
             maxLength={4}
@@ -1649,7 +1649,7 @@ function CompanySection() {
       <div className="flex flex-col gap-4">
         <div className="flex items-end gap-3">
           <div className="w-[220px]">
-            <FormField label="CEP">
+            <FormField id="fiscal-cep" label="CEP">
               <CepInput
                 value={fiscalAddr.cep}
                 onChange={v => setFiscalAddr(a => ({ ...a, cep: v }))}
@@ -1660,24 +1660,24 @@ function CompanySection() {
           </div>
         </div>
         <div className="grid grid-cols-[1fr_80px_1fr] gap-x-4 gap-y-4">
-          <FormField label="Rua">
+          <FormField id="fiscal-rua" label="Rua">
             <Input placeholder="Rua" value={fiscalAddr.street} onChange={e => setFiscalAddr(a => ({ ...a, street: e.target.value }))} disabled={loading} />
           </FormField>
-          <FormField label="Nº">
+          <FormField id="fiscal-numero" label="Nº">
             <Input placeholder="Nº" value={fiscalAddr.number} onChange={e => setFiscalAddr(a => ({ ...a, number: e.target.value }))} disabled={loading} />
           </FormField>
-          <FormField label="Complemento">
+          <FormField id="fiscal-complemento" label="Complemento">
             <Input placeholder="Complemento" value={fiscalAddr.complement} onChange={e => setFiscalAddr(a => ({ ...a, complement: e.target.value }))} disabled={loading} />
           </FormField>
         </div>
         <div className="grid grid-cols-[1fr_1fr_80px] gap-x-4 gap-y-4">
-          <FormField label="Bairro">
+          <FormField id="fiscal-bairro" label="Bairro">
             <Input placeholder="Bairro" value={fiscalAddr.neighborhood} onChange={e => setFiscalAddr(a => ({ ...a, neighborhood: e.target.value }))} disabled={loading} />
           </FormField>
-          <FormField label="Cidade">
+          <FormField id="fiscal-cidade" label="Cidade">
             <Input placeholder="Cidade" value={fiscalAddr.city} onChange={e => setFiscalAddr(a => ({ ...a, city: e.target.value }))} disabled={loading} />
           </FormField>
-          <FormField label="UF">
+          <FormField id="fiscal-uf" label="UF">
             <Input placeholder="UF" value={fiscalAddr.state} maxLength={2} onChange={e => setFiscalAddr(a => ({ ...a, state: e.target.value.toUpperCase() }))} disabled={loading} />
           </FormField>
         </div>
@@ -1746,7 +1746,7 @@ function IntelligenceSection() {
       <SectionCard>
         <SectionHeader icon={Bot} title="Personalidade da Kyra" description="Como a assistente se apresenta e se comunica com sua equipe." />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <FormField label="Nome da assistente">
+          <FormField id="kyra-persona-name" label="Nome da assistente">
             <Input
               value={config.persona_name}
               onChange={e => patch({ persona_name: e.target.value })}
@@ -1754,7 +1754,7 @@ function IntelligenceSection() {
               maxLength={40}
             />
           </FormField>
-          <FormField label="Idioma">
+          <FormField id="kyra-language" label="Idioma">
             <select
               value={config.language}
               onChange={e => patch({ language: e.target.value })}
@@ -1767,7 +1767,7 @@ function IntelligenceSection() {
           </FormField>
         </div>
 
-        <FormField label="Tom de voz" className="mt-4">
+        <FormField id="kyra-tone" label="Tom de voz" className="mt-4">
           <div className="flex gap-2 flex-wrap">
             {TONE_OPTIONS.map(t => (
               <button
@@ -1787,7 +1787,7 @@ function IntelligenceSection() {
           </div>
         </FormField>
 
-        <FormField label="Instruções personalizadas" className="mt-4">
+        <FormField id="kyra-instructions" label="Instruções personalizadas" className="mt-4">
           <textarea
             value={config.custom_instructions}
             onChange={e => patch({ custom_instructions: e.target.value })}
@@ -1956,7 +1956,7 @@ function IntegrationCard({
       {open && (
         <div className="mt-4 pt-4 border-t space-y-3">
           {def.fields.map(field => (
-            <FormField key={field.key} label={field.label}>
+            <FormField key={field.key} id={field.key} label={field.label}>
               <div className="relative">
                 <Input
                   type={field.secret && !showSecrets[field.key] ? 'password' : 'text'}
@@ -2057,7 +2057,7 @@ function SecuritySection() {
     label, value, onChange, showKey,
   }: { label: string; value: string; onChange: (v: string) => void; showKey: keyof typeof show }) {
     return (
-      <FormField label={label}>
+      <FormField id={showKey} label={label}>
         <div className="relative">
           <Input
             type={show[showKey] ? 'text' : 'password'}

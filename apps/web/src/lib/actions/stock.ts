@@ -12,9 +12,10 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, companyId: profile.company_id }
+  return { supabase, companyId: profile.company_id as string }
 }
 
 // ── Helpers de status ────────────────────────────────────────
@@ -62,13 +63,13 @@ export async function getStockProducts(filter?: StockFilter) {
 
   // Busca produtos e movimentos SAIDA dos últimos 30 dias em paralelo
   const [{ data: products, error }, { data: movements }] = await Promise.all([
-    supabase
+    (supabase as any)
       .from('products')
       .select('id, name, sku, cost_price, stock_quantity, min_stock, max_stock, is_active, unit, created_at')
       .eq('company_id', companyId)
       .eq('is_active', true)
       .order('name'),
-    supabase
+    (supabase as any)
       .from('stock_movements')
       .select('product_id, quantity')
       .eq('company_id', companyId)
@@ -76,7 +77,7 @@ export async function getStockProducts(filter?: StockFilter) {
       .gte('created_at', since),
   ])
 
-  if (error) throw new Error(error.message)
+  if (error) throw new Error((error as any).message ?? String(error))
 
   // Mapa: product_id → total vendido nos últimos 30 dias
   const salesMap: Record<string, number> = {}
@@ -84,7 +85,7 @@ export async function getStockProducts(filter?: StockFilter) {
     salesMap[m.product_id] = (salesMap[m.product_id] ?? 0) + Number(m.quantity)
   }
 
-  return (products ?? []).map(p => {
+  return (products ?? []).map((p: any) => {
     const totalSold = salesMap[p.id] ?? 0
     const avgDailySales = totalSold / DAYS
     const hadSalesIn30Days = totalSold > 0
@@ -113,12 +114,12 @@ export async function getStockSummary() {
   const since = new Date(Date.now() - DAYS * 24 * 60 * 60 * 1000).toISOString()
 
   const [{ data: items, error }, { data: movements }] = await Promise.all([
-    supabase
+    (supabase as any)
       .from('products')
       .select('id, stock_quantity, cost_price, min_stock, max_stock, is_active')
       .eq('company_id', companyId)
       .eq('is_active', true),
-    supabase
+    (supabase as any)
       .from('stock_movements')
       .select('product_id, quantity')
       .eq('company_id', companyId)
@@ -126,24 +127,24 @@ export async function getStockSummary() {
       .gte('created_at', since),
   ])
 
-  if (error) throw new Error(error.message)
+  if (error) throw new Error((error as any).message ?? String(error))
 
   const salesMap: Record<string, number> = {}
   for (const m of movements ?? []) {
     salesMap[m.product_id] = (salesMap[m.product_id] ?? 0) + Number(m.quantity)
   }
 
-  const totalValue = (items ?? []).reduce((s, p) => s + p.stock_quantity * (p.cost_price ?? 0), 0)
+  const totalValue = (items ?? []).reduce((s: number, p: any) => s + p.stock_quantity * (p.cost_price ?? 0), 0)
   const totalProducts = (items ?? []).length
 
-  const lowStock = (items ?? []).filter(p => {
+  const lowStock = (items ?? []).filter((p: any) => {
     if (p.stock_quantity <= 0) return false
     const avg = (salesMap[p.id] ?? 0) / DAYS
     const coverage = avg > 0 ? Math.floor(p.stock_quantity / avg) : null
     return p.stock_quantity <= (p.min_stock ?? 0) || (coverage !== null && coverage < 7)
   }).length
 
-  const slowMoving = (items ?? []).filter(p =>
+  const slowMoving = (items ?? []).filter((p: any) =>
     p.stock_quantity > 0 && (salesMap[p.id] ?? 0) === 0
   ).length
 
@@ -155,7 +156,7 @@ export async function getStockMovements(filters: { product_id?: string; type?: s
   const { supabase, companyId } = await getServerContext()
   const { limit = 50 } = filters
 
-  let query = supabase
+  let query = (supabase as any)
     .from('stock_movements')
     .select('id, type, quantity, unit_cost, notes, created_at, reference_type, reference_id, products(name, sku), profiles!created_by(full_name)')
     .eq('company_id', companyId)
@@ -166,7 +167,7 @@ export async function getStockMovements(filters: { product_id?: string; type?: s
   if (filters.type) query = query.eq('type', filters.type)
 
   const { data, error } = await query
-  if (error) throw new Error(error.message)
+  if (error) throw new Error((error as any).message ?? String(error))
   return data ?? []
 }
 
@@ -181,7 +182,7 @@ export async function createStockMovement(values: {
     const { supabase, companyId } = await getServerContext()
 
     // Get current stock
-    const { data: product, error: prodError } = await supabase
+    const { data: product, error: prodError } = await (supabase as any)
       .from('products')
       .select('id, stock_quantity, cost_price')
       .eq('id', values.product_id)
@@ -194,7 +195,7 @@ export async function createStockMovement(values: {
                   values.type === 'INVENTARIO' ? (values.quantity - product.stock_quantity) :
                   values.quantity
 
-    const { error: movError } = await supabase.from('stock_movements').insert({
+    const { error: movError } = await (supabase as any).from('stock_movements').insert({
       company_id: companyId,
       product_id: values.product_id,
       type: values.type,
@@ -204,11 +205,11 @@ export async function createStockMovement(values: {
       reference_type: 'manual',
     })
 
-    if (movError) return { success: false, error: movError.message }
+    if (movError) return { success: false, error: (movError as any).message ?? String(movError) }
 
     // Update cache
     const newQty = values.type === 'INVENTARIO' ? values.quantity : product.stock_quantity + delta
-    await supabase.from('products').update({ stock_quantity: Math.max(0, newQty) }).eq('id', values.product_id)
+    await (supabase as any).from('products').update({ stock_quantity: Math.max(0, newQty) }).eq('id', values.product_id)
 
     revalidatePath('/stock')
     return { success: true }

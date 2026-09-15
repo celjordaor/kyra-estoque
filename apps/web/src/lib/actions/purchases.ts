@@ -10,9 +10,10 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await (admin as any).from('profiles').select('company_id').eq('id', user.id).single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, companyId: profile.company_id, userId: user.id }
+  return { supabase, companyId: profile.company_id as string, userId: user.id }
 }
 
 export type PurchaseOrderStatus = 'draft' | 'sent' | 'confirmed' | 'received' | 'cancelled'
@@ -89,7 +90,7 @@ export async function getPurchaseSuggestions(): Promise<PurchaseSuggestion[]> {
   const LEAD_TIME_DAYS = 7
   const sinceDate = new Date(Date.now() - DAYS * 24 * 60 * 60 * 1000).toISOString()
 
-  const { data: movements } = await supabase
+  const { data: movements } = await (supabase as any)
     .from('stock_movements')
     .select('product_id, quantity')
     .eq('company_id', companyId)
@@ -101,7 +102,7 @@ export async function getPurchaseSuggestions(): Promise<PurchaseSuggestion[]> {
     salesMap[m.product_id] = (salesMap[m.product_id] ?? 0) + Number(m.quantity)
   }
 
-  const { data: products, error } = await supabase
+  const { data: products, error } = await (supabase as any)
     .from('products')
     .select('id, name, sku, stock_quantity, min_stock, cost_price, supplier_id, suppliers(name)')
     .eq('company_id', companyId)
@@ -146,7 +147,7 @@ export async function getPurchaseSuggestions(): Promise<PurchaseSuggestion[]> {
 export async function getPurchaseOrders(status?: PurchaseOrderStatus): Promise<PurchaseOrder[]> {
   const { supabase } = await getServerContext()
 
-  let query = supabase
+  let query = (supabase as any)
     .from('purchase_orders')
     .select('id, status, supplier_id, expected_delivery_date, received_at, freight, subtotal, total, notes, created_at, suppliers(name), purchase_order_items(id)')
     .order('created_at', { ascending: false })
@@ -156,7 +157,7 @@ export async function getPurchaseOrders(status?: PurchaseOrderStatus): Promise<P
   const { data, error } = await query
   if (error) throw new Error(error.message)
 
-  return (data ?? []).map(o => {
+  return (data ?? []).map((o: any) => {
     const supplier = Array.isArray(o.suppliers) ? o.suppliers[0] : o.suppliers
     const items = Array.isArray(o.purchase_order_items) ? o.purchase_order_items : []
     return {
@@ -180,7 +181,7 @@ export async function getPurchaseOrders(status?: PurchaseOrderStatus): Promise<P
 export async function getPurchaseOrderDetail(id: string): Promise<PurchaseOrderDetail | null> {
   const { supabase, companyId } = await getServerContext()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('purchase_orders')
     .select(`
       id, status, supplier_id, expected_delivery_date, received_at,
@@ -210,7 +211,7 @@ export async function getPurchaseOrderDetail(id: string): Promise<PurchaseOrderD
     notes: data.notes,
     created_at: data.created_at,
     item_count: rawItems.length,
-    items: rawItems.map(item => {
+    items: rawItems.map((item: any) => {
       const prod = Array.isArray((item as { products?: unknown }).products)
         ? ((item as { products: { name: string }[] }).products)[0]
         : (item as { products?: { name: string } | null }).products
@@ -250,11 +251,11 @@ export async function receivePurchaseOrder(
       created_by: userId,
     }))
 
-    const { error: movErr } = await supabase.from('stock_movements').insert(movements)
+    const { error: movErr } = await (supabase as any).from('stock_movements').insert(movements)
     if (movErr) return { success: false, error: movErr.message }
 
     // Mark order as received
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await (supabase as any)
       .from('purchase_orders')
       .update({ status: 'received', received_at: new Date().toISOString() })
       .eq('id', orderId)
@@ -276,11 +277,11 @@ export async function createPurchaseOrder(
   try {
     const { supabase, companyId, userId } = await getServerContext()
 
-    const subtotal = values.items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0)
+    const subtotal = values.items.reduce((sum, item) => sum + (item.quantity ?? 0) * item.unit_cost, 0)
     const freight = values.freight ?? 0
     const total = subtotal + freight
 
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await (supabase as any)
       .from('purchase_orders')
       .insert({
         company_id: companyId,
@@ -301,11 +302,11 @@ export async function createPurchaseOrder(
     const itemsPayload = values.items.map(item => ({
       purchase_order_id: order.id,
       product_id: item.product_id,
-      quantity: item.quantity,
+      quantity: item.quantity ?? 0,
       unit_cost: item.unit_cost,
     }))
 
-    const { error: itemsError } = await supabase.from('purchase_order_items').insert(itemsPayload)
+    const { error: itemsError } = await (supabase as any).from('purchase_order_items').insert(itemsPayload)
     if (itemsError) return { success: false, error: itemsError.message }
 
     revalidatePath('/purchases')
@@ -323,7 +324,7 @@ export async function cancelPurchaseOrder(
     const { supabase, companyId } = await getServerContext()
 
     // Only draft orders can be cancelled
-    const { data: order } = await supabase
+    const { data: order } = await (supabase as any)
       .from('purchase_orders')
       .select('status')
       .eq('id', id)
@@ -333,7 +334,7 @@ export async function cancelPurchaseOrder(
     if (!order) return { success: false, error: 'Pedido não encontrado' }
     if (order.status !== 'draft') return { success: false, error: 'Apenas rascunhos podem ser cancelados' }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('purchase_orders')
       .update({ status: 'cancelled' })
       .eq('id', id)
@@ -355,7 +356,7 @@ export async function advancePurchaseOrderStatus(
   try {
     const { supabase, companyId } = await getServerContext()
 
-    const { data: order } = await supabase
+    const { data: order } = await (supabase as any)
       .from('purchase_orders')
       .select('status')
       .eq('id', id)
@@ -368,7 +369,7 @@ export async function advancePurchaseOrderStatus(
     const next = transitions[order.status]
     if (!next) return { success: false, error: `Status "${order.status}" não pode ser avançado` }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('purchase_orders')
       .update({ status: next })
       .eq('id', id)

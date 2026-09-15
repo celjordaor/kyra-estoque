@@ -17,11 +17,12 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await (admin as any)
     .from('profiles')
     .select('company_id, email')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { company_id: string | null; email: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
   return { supabase, admin, companyId: profile.company_id as string, userEmail: profile.email as string }
 }
@@ -29,12 +30,12 @@ async function getServerContext() {
 // ── Get all automations ───────────────────────────────────────
 export async function getCompanyAutomations(): Promise<CompanyAutomation[]> {
   const { supabase, companyId } = await getServerContext()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('company_automations')
     .select('id, automation_type, title, action_type, recipient_type, enabled, config, n8n_workflow_id, n8n_webhook_url, last_run_at, run_count, updated_at')
     .eq('company_id', companyId)
     .order('created_at')
-  if (error) throw new Error(error.message)
+  if (error) throw new Error((error as any).message ?? String(error))
   return (data ?? []) as CompanyAutomation[]
 }
 
@@ -48,7 +49,7 @@ export async function createAutomation(
   try {
     const { supabase, companyId } = await getServerContext()
 
-    const { count: currentEnabled } = await supabase
+    const { count: currentEnabled } = await (supabase as any)
       .from('company_automations')
       .select('*', { count: 'exact', head: true })
       .eq('company_id', companyId)
@@ -60,14 +61,14 @@ export async function createAutomation(
       return { success: false, error: 'LIMIT_REACHED', upgradeRequired: true, limit: autoLimit }
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('company_automations')
       .upsert(
         { company_id: companyId, automation_type: trigger, title, action_type: action, recipient_type: recipient, enabled: true },
         { onConflict: 'company_id,automation_type' }
       )
 
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/automations')
     return { success: true }
   } catch (e) {
@@ -84,7 +85,7 @@ export async function toggleAutomation(
     const { supabase, companyId } = await getServerContext()
 
     if (enabled) {
-      const { count: currentEnabled } = await supabase
+      const { count: currentEnabled } = await (supabase as any)
         .from('company_automations')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
@@ -97,14 +98,14 @@ export async function toggleAutomation(
       }
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('company_automations')
       .upsert(
         { company_id: companyId, automation_type: automationType, enabled },
         { onConflict: 'company_id,automation_type' }
       )
 
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/automations')
     return { success: true }
   } catch (e) {
@@ -118,12 +119,12 @@ export async function deleteAutomation(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('company_automations')
       .delete()
       .eq('id', id)
       .eq('company_id', companyId)
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/automations')
     return { success: true }
   } catch (e) {
@@ -160,7 +161,7 @@ export async function triggerAutomation(
   try {
     const { supabase, admin, companyId, userEmail } = await getServerContext()
 
-    const { data: automation, error: fetchErr } = await supabase
+    const { data: automation, error: fetchErr } = await (supabase as any)
       .from('company_automations')
       .select('id, action_type, recipient_type, title, enabled, run_count')
       .eq('company_id', companyId)
@@ -175,14 +176,14 @@ export async function triggerAutomation(
       return { success: false, error: `Ação "${ACTION_LABELS[actionType] ?? actionType}" requer integração adicional (em breve).` }
     }
 
-    const { data: run, error: runErr } = await admin
+    const { data: run, error: runErr } = await (admin as any)
       .from('automation_runs')
       .insert({ company_id: companyId, automation_type: automationType, status: 'running', triggered_by: 'manual', payload: {} })
       .select('id').single()
 
     if (runErr || !run) return { success: false, error: 'Falha ao registrar execução' }
 
-    const { data: company } = await admin.from('companies').select('name').eq('id', companyId).single()
+    const { data: company } = await (admin as any).from('companies').select('name').eq('id', companyId).single()
     const companyName = company?.name ?? 'Sua empresa'
     const recipientLabel = RECIPIENT_LABELS[automation.recipient_type as string] ?? 'Você'
     const triggerLabel = TRIGGER_LABELS[automationType] ?? automationType
@@ -192,7 +193,7 @@ export async function triggerAutomation(
     let footerNote: string | undefined
 
     if (automationType === 'low_stock') {
-      const { data: products } = await supabase
+      const { data: products } = await (supabase as any)
         .from('products').select('name, current_stock, min_stock')
         .eq('company_id', companyId).filter('current_stock', 'lte', 'min_stock').limit(10)
       const list = (products ?? []).map((p: { name: string; current_stock: number; min_stock: number }) =>
@@ -211,7 +212,7 @@ export async function triggerAutomation(
       bodyLines = ['Uma nova venda foi registrada no Kyra Estoque.', 'Acesse o módulo de vendas para ver os detalhes.']
     } else if (automationType === 'weekly' || automationType === 'weekly_report') {
       const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
-      const { data: sales } = await supabase.from('sales').select('total_amount').eq('company_id', companyId).gte('created_at', weekAgo.toISOString())
+      const { data: sales } = await (supabase as any).from('sales').select('total_amount').eq('company_id', companyId).gte('created_at', weekAgo.toISOString())
       const totalSales = (sales ?? []).length
       const totalRevenue = (sales ?? []).reduce((s: number, r: { total_amount: number }) => s + (r.total_amount ?? 0), 0)
       subject = '📊 Relatório semanal — Kyra Estoque'
@@ -245,7 +246,7 @@ export async function triggerAutomation(
       emailError = 'RESEND_API_KEY não configurado'
     }
 
-    await admin.from('automation_runs').update({
+    await (admin as any).from('automation_runs').update({
       status: emailError ? 'failed' : 'success',
       error_message: emailError,
       finished_at: new Date().toISOString(),
@@ -254,7 +255,7 @@ export async function triggerAutomation(
 
     if (emailError) return { success: false, error: emailError }
 
-    await supabase.from('company_automations').update({
+    await (supabase as any).from('company_automations').update({
       last_run_at: new Date().toISOString(),
       run_count: ((automation.run_count as number) ?? 0) + 1,
     }).eq('id', automation.id)
@@ -270,11 +271,11 @@ export async function triggerAutomation(
 export async function getAutomationStats(): Promise<{ activeCount: number; runsToday: number }> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { count: activeCount } = await supabase
+    const { count: activeCount } = await (supabase as any)
       .from('company_automations').select('*', { count: 'exact', head: true })
       .eq('company_id', companyId).eq('enabled', true)
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-    const { count: runsToday } = await supabase
+    const { count: runsToday } = await (supabase as any)
       .from('automation_runs').select('*', { count: 'exact', head: true })
       .eq('company_id', companyId).gte('started_at', todayStart.toISOString())
     return { activeCount: activeCount ?? 0, runsToday: runsToday ?? 0 }
@@ -284,7 +285,7 @@ export async function getAutomationStats(): Promise<{ activeCount: number; runsT
 // ── Get recent automation runs ────────────────────────────────
 export async function getAutomationRuns(limit = 20): Promise<AutomationRun[]> {
   const { supabase, companyId } = await getServerContext()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('automation_runs')
     .select('id, automation_type, status, triggered_by, error_message, payload, started_at, finished_at, duration_ms')
     .eq('company_id', companyId).order('started_at', { ascending: false }).limit(limit)
@@ -295,7 +296,7 @@ export async function getAutomationRuns(limit = 20): Promise<AutomationRun[]> {
 // ── Get recent automation logs (legacy compat) ────────────────
 export async function getAutomationLogs(limit = 20): Promise<AutomationLog[]> {
   const { supabase, companyId } = await getServerContext()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('automation_logs')
     .select('id, workflow_name, trigger_type, status, error_message, started_at, finished_at, duration_ms')
     .eq('company_id', companyId).order('started_at', { ascending: false }).limit(limit)
@@ -309,11 +310,11 @@ export async function updateAutomationN8nConfig(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { supabase, companyId } = await getServerContext()
-    const { error } = await supabase.from('company_automations').upsert(
+    const { error } = await (supabase as any).from('company_automations').upsert(
       { company_id: companyId, automation_type: automationType, n8n_workflow_id: n8nWorkflowId, n8n_webhook_url: n8nWebhookUrl },
       { onConflict: 'company_id,automation_type' }
     )
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: (error as any).message ?? String(error) }
     revalidatePath('/automations')
     return { success: true }
   } catch (e) {
