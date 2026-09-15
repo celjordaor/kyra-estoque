@@ -108,7 +108,7 @@ export async function getSales(filters: SalesFilters = {}): Promise<{ data: Sale
   if (error) throw new Error(error.message)
 
   return {
-    data: (data ?? []).map(s => ({
+    data: (data ?? []).map((s: any) => ({
       id: s.id,
       sale_number: s.sale_number,
       status: s.status as SaleStatus,
@@ -150,12 +150,12 @@ export async function getSalesSummary(from?: string, to?: string): Promise<Sales
     return { total_revenue: 0, total_sales: 0, avg_ticket: 0, total_margin: null }
   }
 
-  const total_revenue = data.reduce((s, r) => s + r.total_amount, 0)
+  const total_revenue = data.reduce((s: any, r: any) => s + r.total_amount, 0)
   const total_sales = data.length
   const avg_ticket = total_sales > 0 ? total_revenue / total_sales : 0
-  const margins = data.filter(r => r.margin !== null)
+  const margins = data.filter((r: any) => r.margin !== null)
   const total_margin = margins.length > 0
-    ? margins.reduce((s, r) => s + (r.margin ?? 0), 0) / margins.length
+    ? margins.reduce((s: any, r: any) => s + (r.margin ?? 0), 0) / margins.length
     : null
 
   return { total_revenue, total_sales, avg_ticket, total_margin }
@@ -220,7 +220,7 @@ export async function getSaleDetail(id: string): Promise<SaleDetail | null> {
     creator_name: null,
     item_count: items.length,
     nfe_emission,
-    items: items.map(item => ({
+    items: items.map((item: any) => ({
       id: item.id,
       product_id: item.product_id,
       product_name: item.product_name,
@@ -257,7 +257,7 @@ export async function refundSale(id: string): Promise<{ success: boolean; error?
 
     // Create DEVOLUCAO movements to return stock
     if (items.length > 0) {
-      const movements = items.map(item => ({
+      const movements = items.map((item: any) => ({
         company_id: companyId,
         product_id: item.product_id,
         type: 'DEVOLUCAO' as const,
@@ -338,7 +338,7 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
 
     if (products) {
       for (const item of input.items) {
-        const prod = products.find(p => p.id === item.product_id)
+        const prod = products.find((p: any) => p.id === item.product_id)
         if (prod && prod.stock_quantity < item.quantity) {
           throw new Error(
             `Estoque insuficiente para "${item.product_name}": disponível ${prod.stock_quantity}, solicitado ${item.quantity}. Ative "Permitir estoque negativo" em Configurações > Operação.`

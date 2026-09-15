@@ -86,7 +86,7 @@ export async function getAdminTenants(): Promise<TenantRow[]> {
   if (!companies?.length) return []
 
   // Buscar subscriptions em paralelo
-  const companyIds = companies.map(c => c.id)
+  const companyIds = companies.map((c: any) => c.id)
 
   const [{ data: subs }, { data: profileCounts }, { data: productCounts }] = await Promise.all([
     (admin as any)
@@ -127,7 +127,7 @@ export async function getAdminTenants(): Promise<TenantRow[]> {
     productCountMap.set(p.company_id, (productCountMap.get(p.company_id) ?? 0) + 1)
   }
 
-  return companies.map(c => {
+  return companies.map((c: any) => {
     const sub = subMap.get(c.id)
     return {
       id: c.id,
@@ -202,8 +202,8 @@ export async function getSupportTickets(): Promise<SupportTicketRow[]> {
 
   if (!data?.length) return []
 
-  const companyIds = [...new Set(data.map(t => t.company_id).filter(Boolean))]
-  const userIds = [...new Set(data.map(t => t.user_id).filter(Boolean))]
+  const companyIds = [...new Set(data.map((t: any) => t.company_id).filter(Boolean))]
+  const userIds = [...new Set(data.map((t: any) => t.user_id).filter(Boolean))]
 
   const [{ data: companies }, { data: authUsers }] = await Promise.all([
     companyIds.length ? (admin as any).from('companies').select('id, name').in('id', companyIds) : Promise.resolve({ data: [] }),
@@ -213,7 +213,7 @@ export async function getSupportTickets(): Promise<SupportTicketRow[]> {
   const companyMap = new Map((companies ?? []).map((c: any) => [c.id, c.name]))
   const userMap = new Map(((authUsers as any)?.users ?? []).map((u: any) => [u.id, u.email]))
 
-  return data.map(t => ({
+  return data.map((t: any) => ({
     id: t.id,
     company_name: t.company_id ? companyMap.get(t.company_id) ?? null : null,
     user_email: t.user_id ? userMap.get(t.user_id) ?? null : null,
@@ -262,8 +262,8 @@ export async function getAdminStats(): Promise<AdminStats> {
       (admin as any).from('leads').select('id', { count: 'exact', head: true }).eq('status', 'new'),
     ])
 
-    const active = subs?.filter(s => s.status === 'active').length ?? 0
-    const trialing = subs?.filter(s => s.status === 'trialing').length ?? 0
+    const active = subs?.filter((s: any) => s.status === 'active').length ?? 0
+    const trialing = subs?.filter((s: any) => s.status === 'trialing').length ?? 0
 
     return {
       total_tenants: total_tenants ?? 0,
@@ -298,14 +298,14 @@ export async function getAdminLogs(): Promise<LogEntry[]> {
 
   if (!events?.length) return []
 
-  const companyIds = [...new Set(events.map(e => e.company_id).filter(Boolean))]
+  const companyIds = [...new Set(events.map((e: any) => e.company_id).filter(Boolean))]
   const { data: companies } = companyIds.length
     ? await (admin as any).from('companies').select('id, name').in('id', companyIds)
     : { data: [] }
 
   const companyMap = new Map((companies ?? []).map((c: any) => [c.id, c.name]))
 
-  return events.map(e => ({
+  return events.map((e: any) => ({
     id: e.id,
     type: e.event_type,
     company_name: e.company_id ? companyMap.get(e.company_id) ?? null : null,
@@ -454,7 +454,7 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
   if (!company) return null
 
   // Resolver e-mails dos granted_by
-  const granterIds = [...new Set((overrides ?? []).map(o => o.granted_by).filter(Boolean))]
+  const granterIds = [...new Set((overrides ?? []).map((o: any) => o.granted_by).filter(Boolean))]
   let granterMap = new Map<string, string>()
   if (granterIds.length) {
     const res = await admin.auth.admin.listUsers({ perPage: 1000 } as any)
@@ -464,8 +464,8 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
 
   // Agregar uso de IA
   const usageRows = usage ?? []
-  const totalTokens = usageRows.reduce((s, r) => s + (r.total_tokens ?? 0), 0)
-  const totalCost = usageRows.reduce((s, r) => s + (r.cost_brl_cents ?? 0), 0)
+  const totalTokens = usageRows.reduce((s: any, r: any) => s + (r.total_tokens ?? 0), 0)
+  const totalCost = usageRows.reduce((s: any, r: any) => s + (r.cost_brl_cents ?? 0), 0)
 
   const plan = sub?.plans as { name: string; slug: string } | null
 
@@ -488,7 +488,7 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
       current_period_start: sub.current_period_start,
       current_period_end: sub.current_period_end,
     } : null,
-    overrides: (overrides ?? []).map(o => ({
+    overrides: (overrides ?? []).map((o: any) => ({
       id: o.id,
       company_id: o.company_id,
       feature_key: o.feature_key,
@@ -505,7 +505,7 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
       total_tokens: totalTokens,
       total_cost_brl_cents: totalCost,
     },
-    onboarding: (onboarding ?? []).map(o => ({
+    onboarding: (onboarding ?? []).map((o: any) => ({
       checkpoint_key: o.checkpoint_key,
       display_name: o.display_name,
       day: o.day,
@@ -570,7 +570,7 @@ export async function getTenantOverrides(companyId: string): Promise<TenantOverr
 
   if (!data?.length) return []
 
-  const granterIds = [...new Set(data.map(o => o.granted_by).filter(Boolean))]
+  const granterIds = [...new Set(data.map((o: any) => o.granted_by).filter(Boolean))]
   let granterMap = new Map<string, string>()
   if (granterIds.length) {
     const res = await admin.auth.admin.listUsers({ perPage: 1000 } as any)
@@ -578,7 +578,7 @@ export async function getTenantOverrides(companyId: string): Promise<TenantOverr
     granterMap = new Map(users.map((u: any) => [u.id, u.email]))
   }
 
-  return data.map(o => ({
+  return data.map((o: any) => ({
     id: o.id,
     company_id: o.company_id,
     feature_key: o.feature_key,
@@ -742,7 +742,7 @@ export async function getAiUsageStats(filters?: {
 
   return [...grouped.entries()].map(([company_id, stats]) => ({
     company_id,
-    company_name: companyMap.get(company_id) ?? null,
+    company_name: (companyMap.get(company_id) ?? null) as string | null,
     period_start: stats.period_start,
     total_calls: stats.total_calls,
     total_tokens: stats.total_tokens,
