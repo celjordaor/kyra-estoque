@@ -14,10 +14,10 @@ export const productSchema = z.object({
 
   min_stock: z.coerce.number().min(0, 'Estoque mínimo não pode ser negativo'),
   max_stock: z.coerce.number().min(0).optional(),
-  unit: z.enum(['un', 'kg', 'lt', 'cx', 'm', 'g', 'ml', 'par']).default('un'),
+  unit: z.enum(['un', 'kg', 'lt', 'cx', 'm', 'g', 'ml', 'par']),
 
-  is_active: z.boolean().default(true),
-  is_featured: z.boolean().default(false),
+  is_active: z.boolean(),
+  is_featured: z.boolean(),
 
   image_url: z.string().url().optional().or(z.literal('')),
 
