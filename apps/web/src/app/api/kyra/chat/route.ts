@@ -35,17 +35,18 @@ export async function POST(req: NextRequest) {
     }
 
     const admin = createAdminSupabaseClient()
-    const { data: profile } = await admin
+    const { data: profileData } = await admin
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
+    const profile = profileData as { company_id: string | null } | null
 
     if (!profile?.company_id) {
       return Response.json({ error: 'Empresa não encontrada' }, { status: 403 })
     }
 
-    const companyId = profile.company_id
+    const companyId = profile.company_id as string
 
     // ── 2. Entitlement: ai.queries.monthly ───────────────────
     const check = await canUse(companyId, 'ai.queries.monthly')
