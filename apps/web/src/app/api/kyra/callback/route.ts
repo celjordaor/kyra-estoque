@@ -30,16 +30,16 @@ export async function POST(req: NextRequest) {
     }
 
     const admin = createAdminSupabaseClient()
-    const { error } = await admin.rpc('complete_automation_run', {
+    const { error } = await admin.rpc('complete_automation_run' as any, {
       p_run_id: run_id,
       p_status: status,
       p_result: result ?? null,
       p_error: error_message ?? null,
-    })
+    } as any)
 
     if (error) {
       console.error('[kyra/callback] RPC error:', error)
-      return Response.json({ error: error.message }, { status: 500 })
+      return Response.json({ error: (error as any).message }, { status: 500 })
     }
 
     return Response.json({ success: true })
