@@ -14,11 +14,12 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await admin
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
   return { supabase, admin, companyId: profile.company_id as string }
 }
@@ -210,12 +211,13 @@ export async function updateChannelConfig(
   const { admin, companyId } = await getServerContext()
 
   // Buscar config atual
-  const { data: int } = await admin
+  const { data: intData } = await admin
     .from('company_integrations')
     .select('config')
     .eq('id', integrationId)
     .eq('company_id', companyId)
     .single()
+  const int = intData as { config: Record<string, unknown> | null } | null
 
   if (!int) return { ok: false, error: 'Integração não encontrada' }
 
@@ -246,17 +248,18 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
   const { admin, companyId } = await getServerContext()
 
   // 1. Busca a integração
-  const { data: int } = await admin
+  const { data: intData2 } = await admin
     .from('company_integrations')
     .select('config, type')
     .eq('id', integrationId)
     .eq('company_id', companyId)
     .single()
+  const int2 = intData2 as { config: Record<string, unknown> | null; type: string } | null
 
-  if (!int) return { ok: false, error: 'Integração não encontrada' }
+  if (!int2) return { ok: false, error: 'Integração não encontrada' }
 
-  const cfg = (int.config ?? {}) as Record<string, unknown>
-  const channelType = int.type as string
+  const cfg = (int2.config ?? {}) as Record<string, unknown>
+  const channelType = int2.type as string
 
   // 2. Se o canal tem adapter real, sincroniza estoque e pedidos
   if (channelHasAdapter(channelType)) {

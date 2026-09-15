@@ -11,11 +11,12 @@ async function requireSuperAdmin() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await admin
     .from('profiles')
     .select('is_super_admin')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { is_super_admin: boolean } | null
   if (!profile?.is_super_admin) throw new Error('Acesso restrito')
   return { admin, userId: user.id }
 }
@@ -406,7 +407,7 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
   const { admin } = await requireSuperAdmin()
 
   const [
-    { data: company },
+    { data: rawCompany },
     { data: sub },
     { data: overrides },
     { data: usage },
@@ -444,6 +445,11 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
       .eq('company_id', companyId)
       .order('day'),
   ])
+
+  const company = rawCompany as {
+    id: string; name: string; slug: string; email: string | null
+    is_active: boolean; created_at: string; kyra_config: Record<string, unknown> | null
+  } | null
 
   if (!company) return null
 

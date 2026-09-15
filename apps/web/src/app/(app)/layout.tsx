@@ -13,11 +13,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect('/login')
   }
 
-  const { data: profile } = await supabase
+  const { data: profileData } = await supabase
     .from('profiles')
     .select('full_name, role, avatar_url')
     .eq('id', user.id)
     .single()
+
+  const profile = profileData as {
+    full_name: string | null
+    role: string | null
+    avatar_url: string | null
+  } | null
 
   const shellUser = {
     name: profile?.full_name ?? user.email ?? 'Usuário',

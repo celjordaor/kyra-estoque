@@ -10,11 +10,12 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin
+  const { data: profileData } = await admin
     .from('profiles')
     .select('company_id, role')
     .eq('id', user.id)
     .single()
+  const profile = profileData as { company_id: string | null; role: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
   return { supabase, admin, companyId: profile.company_id, userId: user.id, myRole: profile.role as string }
 }
@@ -100,7 +101,8 @@ export async function removeMember(
     if (userId === myId) return { success: false, error: 'Não é possível remover a si mesmo' }
 
     // Não pode remover o último owner
-    const { data: target } = await admin.from('profiles').select('role').eq('id', userId).eq('company_id', companyId).single()
+    const { data: targetData } = await admin.from('profiles').select('role').eq('id', userId).eq('company_id', companyId).single()
+    const target = targetData as { role: string | null } | null
     if (target?.role === 'owner') {
       const { count } = await admin.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('role', 'owner')
       if ((count ?? 0) <= 1) return { success: false, error: 'Não é possível remover o único proprietário' }
@@ -205,7 +207,8 @@ export async function deleteRole(roleId: string): Promise<{ success: boolean; er
     const { admin, companyId, myRole } = await getServerContext()
     if (!['owner', 'admin'].includes(myRole)) return { success: false, error: 'Sem permissão' }
 
-    const { data: role } = await admin.from('roles').select('is_system').eq('id', roleId).eq('company_id', companyId).single()
+    const { data: roleRowData } = await admin.from('roles').select('is_system').eq('id', roleId).eq('company_id', companyId).single()
+    const role = roleRowData as { is_system: boolean } | null
     if (role?.is_system) return { success: false, error: 'Não é possível excluir perfis do sistema' }
 
     const { error } = await admin.from('roles').delete().eq('id', roleId).eq('company_id', companyId)

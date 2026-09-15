@@ -10,7 +10,8 @@ async function getServerContext() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Não autenticado')
   const admin = createAdminSupabaseClient()
-  const { data: profile } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const { data: profileData } = await admin.from('profiles').select('company_id').eq('id', user.id).single()
+  const profile = profileData as { company_id: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
   return { supabase, companyId: profile.company_id, userId: user.id }
 }
@@ -63,7 +64,7 @@ export interface UpdateCompanyProfileInput {
 export async function getCompanySettings(): Promise<CompanySettings | null> {
   const { supabase, companyId } = await getServerContext()
 
-  const { data, error } = await supabase
+  const { data: rawData, error } = await supabase
     .from('companies')
     .select(`
       id, name, fantasy_name, document, email, phone, website, logo_url,
@@ -74,7 +75,17 @@ export async function getCompanySettings(): Promise<CompanySettings | null> {
     .eq('id', companyId)
     .single()
 
-  if (error || !data) return null
+  if (error || !rawData) return null
+
+  const data = rawData as {
+    id: string; name: string; fantasy_name: string | null; document: string | null
+    email: string | null; phone: string | null; website: string | null; logo_url: string | null
+    address_cep: string | null; address_street: string | null; address_number: string | null
+    address_complement: string | null; address_neighborhood: string | null
+    address_city: string | null; address_state: string | null
+    allow_negative_stock: boolean; track_by_movement: boolean
+    allow_discount: boolean; require_customer: boolean
+  }
 
   return {
     id: data.id,
@@ -221,11 +232,12 @@ export async function getFiscalConfig(): Promise<FiscalConfig> {
   try {
     const { companyId } = await getServerContext()
     const admin = createAdminSupabaseClient()
-    const { data } = await admin
+    const { data: rawFiscal } = await admin
       .from('companies')
       .select('kyra_config')
       .eq('id', companyId)
       .single()
+    const data = rawFiscal as { kyra_config: Record<string, unknown> | null } | null
     return ((data?.kyra_config as Record<string, unknown>)?.fiscal ?? {}) as FiscalConfig
   } catch {
     return {}
@@ -240,11 +252,12 @@ export async function updateFiscalConfig(
     const admin = createAdminSupabaseClient()
 
     // Busca config atual para fazer merge sem perder outros campos do kyra_config
-    const { data: current } = await admin
+    const { data: rawCurrent } = await admin
       .from('companies')
       .select('kyra_config')
       .eq('id', companyId)
       .single()
+    const current = rawCurrent as { kyra_config: Record<string, unknown> | null } | null
 
     const merged = {
       ...((current?.kyra_config as Record<string, unknown>) ?? {}),
