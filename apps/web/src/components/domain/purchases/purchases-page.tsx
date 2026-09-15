@@ -439,9 +439,9 @@ export function PurchasesPage() {
       const next = [...prev]
       if (field === 'product_id') {
         const prod = allProducts.find(p => p.id === value)
-        next[idx] = { ...next[idx], product_id: String(value), product_name: prod?.name ?? '', unit_cost: prod?.cost_price ?? 0 }
+        next[idx] = { ...next[idx], product_id: String(value), product_name: prod?.name ?? '', unit_cost: prod?.cost_price ?? 0 } as any
       } else {
-        next[idx] = { ...next[idx], [field]: value }
+        next[idx] = { ...next[idx], [field]: value } as any
       }
       return next
     })

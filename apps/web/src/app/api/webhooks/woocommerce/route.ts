@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   const normalizedSource = normalizeUrl(source)
 
-  const integration = (integrations ?? []).find(i => {
+  const integration = (integrations ?? []).find((i: any) => {
     const cfg = i.config as Record<string, unknown>
     const storeUrl = normalizeUrl(cfg.store_url as string ?? '')
     return storeUrl === normalizedSource

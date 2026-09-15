@@ -35,7 +35,7 @@ async function getServerContext() {
 // ── Tipos de retorno ──────────────────────────────────────────
 export type ProductWithCategory = ProductRow & {
   category: Pick<CategoryRow, 'id' | 'name' | 'color'> | null
-  stock_status: 'ok' | 'low' | 'out'
+  stock_status: 'ok' | 'low' | 'out' | 'excess'
   margin: number
 }
 
@@ -158,7 +158,7 @@ export async function createProduct(
 
     const parsed = productSchema.parse(values)
 
-    const insert: ProductInsert = {
+    const insert: any = {
       company_id: companyId,
       created_by: userId,
       name: parsed.name,

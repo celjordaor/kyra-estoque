@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     .eq('type', 'mercado_livre')
     .eq('is_active', true)
 
-  const integration = (integrations ?? []).find(i => {
+  const integration = (integrations ?? []).find((i: any) => {
     const cfg = i.config as Record<string, unknown>
     return String(cfg.seller_id) === String(user_id)
   })

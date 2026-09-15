@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     .eq('type', 'shopify')
     .eq('is_active', true)
 
-  const integration = (integrations ?? []).find(i => {
+  const integration = (integrations ?? []).find((i: any) => {
     const cfg = i.config as Record<string, unknown>
     const url = (cfg.store_url as string ?? '').replace(/^https?:\/\//, '').replace(/\/$/, '')
     return url === shopDomain
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     let status = 'pending'
     if (order.financial_status && statusMap[order.financial_status]) {
-      status = statusMap[order.financial_status]
+      status = statusMap[order.financial_status] as string
     } else if (order.fulfillment_status === 'fulfilled') {
       status = 'delivered'
     } else if (order.fulfillment_status === 'partial') {
