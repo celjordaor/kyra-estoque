@@ -242,9 +242,11 @@ export async function provisionTenant(
   // ══════════════════════════════════════════════════════════════
   // STEP 5 — Criar perfil
   // ══════════════════════════════════════════════════════════════
+  // Upsert: o trigger handle_new_user pode ter criado o profile automaticamente
+  // ao inserir em auth.users. Upsert garante idempotência sem duplicate key error.
   const { error: profileErr } = await (admin as any)
     .from('profiles')
-    .insert({
+    .upsert({
       id: newUserId,
       company_id: companyId,
       full_name: input.admin_name,
@@ -252,7 +254,7 @@ export async function provisionTenant(
       role: 'owner',
       is_active: true,
       is_super_admin: false,
-    })
+    }, { onConflict: 'id' })
 
   if (profileErr) {
     return await fail('profile', profileErr.message)
