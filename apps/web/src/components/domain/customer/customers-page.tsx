@@ -39,11 +39,14 @@ type FormValues = {
   city: string
   state: string
   notes: string
+  state_registration: string
+  whatsapp: string
 }
 
 const EMPTY: FormValues = {
   person_type: 'individual', name: '', document: '', email: '', phone: '',
   zipcode: '', address: '', address_number: '', complement: '', neighborhood: '', city: '', state: '', notes: '',
+  state_registration: '', whatsapp: '',
 }
 
 
@@ -93,6 +96,7 @@ export function CustomersPage() {
       address: c.address ?? '', address_number: c.address_number ?? '',
       complement: c.complement ?? '', neighborhood: c.neighborhood ?? '',
       city: c.city ?? '', state: c.state ?? '', notes: c.notes ?? '',
+      state_registration: (c as any).state_registration ?? '', whatsapp: (c as any).whatsapp ?? '',
     })
     setFormOpen(true)
   }
@@ -111,6 +115,7 @@ export function CustomersPage() {
         address_number: values.address_number || null, complement: values.complement || null,
         neighborhood: values.neighborhood || null, city: values.city || null,
         state: values.state || null, notes: values.notes || null, is_active: true,
+        state_registration: values.state_registration || null, whatsapp: values.whatsapp || null,
       }
       const r = editing
         ? await updateCustomer(editing.id, payload)
