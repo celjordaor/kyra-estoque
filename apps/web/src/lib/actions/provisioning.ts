@@ -247,7 +247,7 @@ export async function provisionTenant(
     .insert({
       id: newUserId,
       company_id: companyId,
-      name: input.admin_name,
+      full_name: input.admin_name,
       email: input.admin_email,
       role: 'owner',
       is_active: true,
