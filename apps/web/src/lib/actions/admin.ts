@@ -528,7 +528,7 @@ export async function changeTenantPlan(
       .from('plans')
       .select('id, name')
       .eq('slug', planSlug)
-      .eq('is_active', true)
+      .eq('active', true)
       .maybeSingle()
 
     if (!plan) return { success: false, error: `Plano "${planSlug}" não encontrado` }
@@ -748,4 +748,22 @@ export async function getAiUsageStats(filters?: {
     total_tokens: stats.total_tokens,
     total_cost_brl_cents: stats.total_cost,
   })).sort((a, b) => b.total_tokens - a.total_tokens)
+}
+
+// ── Onboarding: seed por tenant ────────────────────────────────
+
+export async function seedOnboardingCheckpoints(
+  companyId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { admin } = await requireSuperAdmin()
+    const { error } = await (admin as any).rpc('seed_onboarding_checkpoints', {
+      p_company_id: companyId,
+    })
+    if (error) return { success: false, error: error.message }
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { success: false, error: e?.message ?? String(e) }
+  }
 }

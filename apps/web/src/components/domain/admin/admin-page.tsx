@@ -5,7 +5,7 @@ import {
   Building2, Users, Ticket, Activity, TrendingUp, AlertCircle,
   CheckCircle2, XCircle, Clock, ChevronDown, Search, Filter,
   MoreHorizontal, Power, Mail, ExternalLink, Tag, MessageSquare,
-  BarChart3, Zap, Crown, Star, RefreshCw, Eye,
+  BarChart3, Zap, Crown, Star, RefreshCw, Eye, Flag,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,7 @@ import {
   getAdminStats, getAdminTenants, getLeads, getSupportTickets, getAdminLogs,
   toggleTenantActive, updateLeadStatus, updateTicketStatus,
   getTenantDetail, changeTenantPlan, getTenantOverrides, setTenantOverride, deleteTenantOverride,
-  getFeatureFlags, updateFeatureFlag, getAiUsageStats,
+  getFeatureFlags, updateFeatureFlag, getAiUsageStats, seedOnboardingCheckpoints,
   type AdminStats, type TenantRow, type LeadRow, type SupportTicketRow, type LogEntry,
   type TenantDetail, type TenantOverrideRow, type FeatureFlagRow, type AiUsageSummary,
 } from '@/lib/actions/admin'
@@ -89,7 +89,7 @@ function StatCard({ icon: Icon, label, value, sub, color = 'text-muted-foregroun
 }
 
 // ── Nav tabs ───────────────────────────────────────────────────
-type Tab = 'tenants' | 'leads' | 'tickets' | 'logs' | 'onboarding' | 'assinaturas' | 'ia' | 'provisioning'
+type Tab = 'tenants' | 'leads' | 'tickets' | 'logs' | 'onboarding' | 'assinaturas' | 'ia' | 'provisioning' | 'flags'
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'tenants',      label: 'Tenants',    icon: Building2 },
   { id: 'leads',        label: 'Leads',      icon: TrendingUp },
@@ -98,6 +98,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'assinaturas',  label: 'Assinaturas',icon: Crown },
   { id: 'ia',           label: 'Uso de IA',  icon: Zap },
   { id: 'provisioning', label: 'Provisionar',icon: RefreshCw },
+  { id: 'flags',        label: 'Feat. Flags', icon: Flag },
   { id: 'logs',         label: 'Auditoria',  icon: Activity },
 ]
 
@@ -204,6 +205,13 @@ function TenantsTab() {
           </table>
         </div>
       )}
+      {selectedTenant && (
+        <TenantDetailPanel
+          companyId={selectedTenant}
+          onClose={() => setSelectedTenant(null)}
+        />
+      )}
+
       <p className="text-xs text-muted-foreground">{filtered.length} de {tenants.length} tenants</p>
     </div>
   )
@@ -556,6 +564,7 @@ export function AdminPage() {
         {tab === 'assinaturas'  && <AssinaturasTab />}
         {tab === 'ia'           && <IaUsageTab />}
         {tab === 'provisioning' && <ProvisioningTab />}
+        {tab === 'flags'       && <FeatureFlagsTab />}
         {tab === 'logs'         && <LogsTab />}
       </div>
     </div>
@@ -720,7 +729,12 @@ function TenantDetailPanel({
               D{cp.day}: {cp.display_name}
             </div>
           ))}
-          {d.onboarding.length === 0 && <p className="text-xs text-muted-foreground">Sem checkpoints (migration pendente?)</p>}
+          {d.onboarding.length === 0 && (
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-muted-foreground">Sem checkpoints para este tenant.</p>
+              <SeedCheckpointsButton companyId={companyId} onDone={() => getTenantDetail(companyId).then(setDetail)} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -734,6 +748,30 @@ function TenantDetailPanel({
         </div>
       </div>
     </div>
+  )
+}
+
+// ── SeedCheckpointsButton ─────────────────────────────────────
+function SeedCheckpointsButton({ companyId, onDone }: { companyId: string; onDone: () => void }) {
+  const [loading, setLoading] = React.useState(false)
+
+  async function handleSeed() {
+    setLoading(true)
+    const r = await seedOnboardingCheckpoints(companyId)
+    if (r.success) {
+      toast.success('Checkpoints criados com sucesso')
+      onDone()
+    } else {
+      toast.error(r.error ?? 'Erro ao executar seed')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <Button size="sm" variant="outline" onClick={handleSeed} disabled={loading} className="h-7 text-xs gap-1">
+      <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+      {loading ? 'Executando…' : 'Seed checkpoints'}
+    </Button>
   )
 }
 
@@ -809,7 +847,10 @@ function OnboardingTab() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {detail.onboarding.length === 0 ? (
-                  <p className="text-xs text-muted-foreground col-span-4">Sem checkpoints. Execute `seed_onboarding_checkpoints` para este tenant.</p>
+                  <div className="col-span-4 flex items-center gap-3">
+                    <p className="text-xs text-muted-foreground">Sem checkpoints para este tenant.</p>
+                    <SeedCheckpointsButton companyId={selected!} onDone={() => selectTenant(selected!)} />
+                  </div>
                 ) : detail.onboarding.map(cp => (
                   <div key={cp.checkpoint_key}
                     className={cn(
@@ -1175,6 +1216,114 @@ function ProvisioningTab() {
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">
                       {formatDateTime(j.created_at)}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Feature Flags Tab ──────────────────────────────────────────
+function FeatureFlagsTab() {
+  const [flags, setFlags] = React.useState<FeatureFlagRow[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [saving, setSaving] = React.useState<string | null>(null)
+
+  const load = () => {
+    setLoading(true)
+    getFeatureFlags().then(d => { setFlags(d); setLoading(false) })
+  }
+  React.useEffect(load, [])
+
+  async function handleCommercial(featureKey: string, commercial_enabled: boolean) {
+    setSaving(featureKey)
+    const r = await updateFeatureFlag(featureKey, { commercial_enabled })
+    if (r.success) {
+      setFlags(prev => prev.map(f => f.feature_key === featureKey ? { ...f, commercial_enabled } : f))
+      toast.success('Feature flag atualizada')
+    } else toast.error(r.error ?? 'Erro')
+    setSaving(null)
+  }
+
+  async function handleTechnical(featureKey: string, technical_status: FeatureFlagRow['technical_status']) {
+    setSaving(featureKey)
+    const r = await updateFeatureFlag(featureKey, { technical_status })
+    if (r.success) {
+      setFlags(prev => prev.map(f => f.feature_key === featureKey ? { ...f, technical_status } : f))
+      toast.success('Status técnico atualizado')
+    } else toast.error(r.error ?? 'Erro')
+    setSaving(null)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Uma feature só é liberada quando{' '}
+          <code className="text-xs bg-muted px-1 rounded">commercial_enabled = true</code> E{' '}
+          <code className="text-xs bg-muted px-1 rounded">technical_status = available</code>.
+        </p>
+        <Button variant="ghost" size="sm" onClick={load} className="h-8 gap-1.5 text-muted-foreground">
+          <RefreshCw className="h-3.5 w-3.5" /> Atualizar
+        </Button>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {loading ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">Carregando…</div>
+        ) : flags.length === 0 ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">Nenhuma feature flag cadastrada.</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="border-b border-border bg-muted/40">
+              <tr>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Feature</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Descrição</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">Comercial</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Status Técnico</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">Status final</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {flags.map(f => {
+                const isLive = f.commercial_enabled && f.technical_status === 'available'
+                return (
+                  <tr key={f.feature_key} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-mono text-xs font-medium">{f.feature_key}</p>
+                      <p className="text-xs text-muted-foreground">{f.display_name}</p>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell max-w-[200px] truncate">
+                      {f.description ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Switch
+                        checked={f.commercial_enabled}
+                        disabled={saving === f.feature_key}
+                        onCheckedChange={v => handleCommercial(f.feature_key, v)}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={f.technical_status}
+                        disabled={saving === f.feature_key}
+                        onChange={e => handleTechnical(f.feature_key, e.target.value as FeatureFlagRow['technical_status'])}
+                        className="h-7 rounded-md border border-input bg-background px-2 text-xs"
+                      >
+                        <option value="available">Disponível</option>
+                        <option value="in_homologation">Homologação</option>
+                        <option value="disabled">Desativado</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge variant={isLive ? 'success' : 'neutral'} className="text-xs">
+                        {isLive ? '✓ Live' : '✗ Off'}
+                      </Badge>
                     </td>
                   </tr>
                 )
