@@ -17,7 +17,7 @@ import {
   getAdminStats, getAdminTenants, getLeads, getSupportTickets, getAdminLogs,
   toggleTenantActive, updateLeadStatus, updateTicketStatus,
   getTenantDetail, changeTenantPlan, getTenantOverrides, setTenantOverride, deleteTenantOverride,
-  getFeatureFlags, updateFeatureFlag, getAiUsageStats, seedOnboardingCheckpoints,
+  getFeatureFlags, updateFeatureFlag, getAiUsageStats, seedOnboardingCheckpoints, deleteTenant,
   type AdminStats, type TenantRow, type LeadRow, type SupportTicketRow, type LogEntry,
   type TenantDetail, type TenantOverrideRow, type FeatureFlagRow, type AiUsageSummary,
 } from '@/lib/actions/admin'
@@ -162,11 +162,12 @@ function TenantsTab() {
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">Criado</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">Ativo</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">Detalhe</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">Excluir</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-10 text-muted-foreground text-sm">Nenhum tenant encontrado</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-muted-foreground text-sm">Nenhum tenant encontrado</td></tr>
               ) : filtered.map(t => (
                 <tr key={t.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
@@ -199,6 +200,13 @@ function TenantsTab() {
                       {selectedTenant === t.id ? "Fechar" : "Ver"}
                     </button>
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    <DeleteTenantButton
+                      tenantId={t.id}
+                      tenantName={t.name}
+                      onDeleted={() => { setTenants(prev => prev.filter(x => x.id !== t.id)); setSelectedTenant(null) }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -214,6 +222,63 @@ function TenantsTab() {
 
       <p className="text-xs text-muted-foreground">{filtered.length} de {tenants.length} tenants</p>
     </div>
+  )
+}
+
+// ── DeleteTenantButton ─────────────────────────────────────────
+function DeleteTenantButton({
+  tenantId,
+  tenantName,
+  onDeleted,
+}: {
+  tenantId: string
+  tenantName: string
+  onDeleted: () => void
+}) {
+  const [confirm, setConfirm] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+
+  async function handleDelete() {
+    setLoading(true)
+    const res = await deleteTenant(tenantId)
+    setLoading(false)
+    setConfirm(false)
+    if (res.success) {
+      toast.success(`Tenant "${tenantName}" excluído (${res.deletedUsers} usuário(s) removido(s))`)
+      onDeleted()
+    } else {
+      toast.error(res.error ?? 'Erro ao excluir tenant')
+    }
+  }
+
+  if (confirm) {
+    return (
+      <div className="flex items-center gap-1 justify-center">
+        <button
+          onClick={handleDelete}
+          disabled={loading}
+          className="text-xs text-destructive font-semibold hover:underline disabled:opacity-50"
+        >
+          {loading ? '...' : 'Confirmar'}
+        </button>
+        <span className="text-muted-foreground text-xs">/</span>
+        <button
+          onClick={() => setConfirm(false)}
+          className="text-xs text-muted-foreground hover:underline"
+        >
+          Cancelar
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => setConfirm(true)}
+      className="text-xs text-destructive/70 hover:text-destructive hover:underline transition-colors"
+    >
+      Excluir
+    </button>
   )
 }
 

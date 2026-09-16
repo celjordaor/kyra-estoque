@@ -767,3 +767,47 @@ export async function seedOnboardingCheckpoints(
     return { success: false, error: e?.message ?? String(e) }
   }
 }
+
+// ── Delete tenant (cascade + auth users) ───────────────────────
+
+export async function deleteTenant(
+  companyId: string,
+): Promise<{ success: boolean; deletedUsers: number; error?: string }> {
+  try {
+    const { admin } = await requireSuperAdmin()
+
+    // 1. Collect auth user IDs before deleting (profiles.company_id → ON DELETE SET NULL)
+    const { data: profiles, error: profilesErr } = await (admin as any)
+      .from('profiles')
+      .select('id')
+      .eq('company_id', companyId)
+
+    if (profilesErr) return { success: false, deletedUsers: 0, error: profilesErr.message }
+
+    const userIds: string[] = (profiles ?? []).map((p: any) => p.id)
+
+    // 2. Delete company — cascades to all public tables (products, sales, etc.)
+    const { error: companyErr } = await (admin as any)
+      .from('companies')
+      .delete()
+      .eq('id', companyId)
+
+    if (companyErr) return { success: false, deletedUsers: 0, error: companyErr.message }
+
+    // 3. Delete auth.users (profiles.company_id is now null, safe to delete)
+    let deletedUsers = 0
+    for (const userId of userIds) {
+      const { error: authErr } = await admin.auth.admin.deleteUser(userId)
+      if (authErr) {
+        console.error(`[deleteTenant] Could not delete auth user ${userId}:`, authErr.message)
+      } else {
+        deletedUsers++
+      }
+    }
+
+    revalidatePath('/admin')
+    return { success: true, deletedUsers }
+  } catch (e: any) {
+    return { success: false, deletedUsers: 0, error: e?.message ?? String(e) }
+  }
+}
