@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createServerSupabaseClient } from '@kyra/database'
+import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 import { AppShell } from '@/components/layout/app-shell'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -13,9 +13,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect('/login')
   }
 
-  const { data: profileData } = await supabase
+  // Buscar perfil via admin client para não ser bloqueado por RLS de is_active
+  const admin = createAdminSupabaseClient()
+  const { data: profileData } = await (admin as any)
     .from('profiles')
-    .select('full_name, role, avatar_url')
+    .select('full_name, role, avatar_url, company_id, is_active')
     .eq('id', user.id)
     .single()
 
@@ -23,7 +25,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     full_name: string | null
     role: string | null
     avatar_url: string | null
+    company_id: string | null
+    is_active: boolean
   } | null
+
+  // Usuário sem empresa vinculada → não pode usar o app
+  if (!profile?.company_id) {
+    redirect('/login?error=no_company')
+  }
 
   const shellUser = {
     name: profile?.full_name ?? user.email ?? 'Usuário',
