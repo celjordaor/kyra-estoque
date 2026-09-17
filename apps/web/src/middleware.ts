@@ -28,7 +28,8 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth')
-  const isPublicRoute = pathname === '/' || isAuthRoute
+  const isApiRoute = pathname.startsWith('/api/')  // API routes handle their own auth
+  const isPublicRoute = pathname === '/' || isAuthRoute || isApiRoute
 
   // Não autenticado tentando acessar rota protegida → redireciona para /login
   if (!user && !isPublicRoute) {
