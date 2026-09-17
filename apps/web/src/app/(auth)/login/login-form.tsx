@@ -74,7 +74,7 @@ export function LoginForm() {
 
       <div className="flex justify-end">
         <Link
-          href="/auth/forgot-password"
+          href="/forgot-password"
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Esqueceu sua senha?
