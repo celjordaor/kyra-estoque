@@ -249,14 +249,23 @@ export async function inviteMember(
       userId = existingAuthUser.id
     } else {
       // Generate invite link via Supabase Auth
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.kyraestoque.com.br'
       const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
         type: 'invite',
         email,
-        options: { data: { company_id: companyId, role } },
+        options: {
+          data: { company_id: companyId, role },
+          redirectTo: `${appUrl}/update-password`,
+        },
       })
       if (linkError) return { success: false, error: linkError.message }
       userId = linkData.user.id
-      const actionLink = linkData.properties?.action_link
+      // Usar hashed_token para link direto ao /auth/callback (server-side verifyOtp)
+      // Evita depender do Site URL do Supabase e de race conditions no browser
+      const hashedToken = linkData.properties?.hashed_token
+      const actionLink = hashedToken
+        ? `${appUrl}/auth/callback?token_hash=${hashedToken}&type=invite&next=/update-password`
+        : (linkData.properties?.action_link ?? null)
 
       // Send email via Resend REST API (no package needed)
       const resendKey = process.env.RESEND_API_KEY
