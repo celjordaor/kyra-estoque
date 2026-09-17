@@ -295,7 +295,13 @@ export async function provisionTenant(
         options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.kyraestoque.com.br'}/update-password` },
       })
 
-      const accessLink = linkData?.properties?.action_link ?? null
+      // Preferir hashed_token para construir link direto ao nosso /auth/callback
+      // (server-side verifyOtp — não depende de PKCE verifier no browser nem de detectSessionInUrl)
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.kyraestoque.com.br'
+      const hashedToken = linkData?.properties?.hashed_token
+      const accessLink = hashedToken
+        ? `${appUrl}/auth/callback?token_hash=${hashedToken}&type=recovery&next=/update-password`
+        : (linkData?.properties?.action_link ?? null)
 
       const emailRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
