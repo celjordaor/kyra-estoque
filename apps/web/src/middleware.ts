@@ -40,7 +40,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Autenticado tentando acessar /login → redireciona para /dashboard
-  if (user && isAuthRoute) {
+  // Exceção: /auth/update-password é permitido para usuários autenticados (primeiro acesso)
+  const isUpdatePassword = pathname === '/auth/update-password'
+  if (user && isAuthRoute && !isUpdatePassword) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

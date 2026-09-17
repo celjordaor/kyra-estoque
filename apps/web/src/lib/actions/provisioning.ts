@@ -292,7 +292,7 @@ export async function provisionTenant(
       const { data: linkData } = await admin.auth.admin.generateLink({
         type: 'recovery',
         email: input.admin_email,
-        options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.kyraestoque.com.br'}/auth/callback` },
+        options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.kyraestoque.com.br'}/auth/callback?next=/auth/update-password` },
       })
 
       const accessLink = linkData?.properties?.action_link ?? null
