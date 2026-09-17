@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .join('\n')
 
-    const { error: dbError } = await admin.from('leads').insert({
+    const { error: dbError } = await (admin as any).from('leads').insert({
       name,
       email,
       phone,
