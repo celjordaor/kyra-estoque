@@ -1,8 +1,11 @@
 'use client'
 
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Bell, Search, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { createClient } from '@kyra/database'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -32,6 +35,14 @@ export function Topbar({
   notificationCount = 0,
   className,
 }: TopbarProps) {
+  const router = useRouter()
+
+  async function handleLogout() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
   const initials = user?.name
     ? user.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
     : 'U'
@@ -107,10 +118,17 @@ export function Topbar({
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Meu perfil</DropdownMenuItem>
-              <DropdownMenuItem>Configurações</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/profile">Meu perfil</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings">Configurações</Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-danger focus:text-danger">
+              <DropdownMenuItem
+                className="text-danger focus:text-danger cursor-pointer"
+                onClick={handleLogout}
+              >
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>

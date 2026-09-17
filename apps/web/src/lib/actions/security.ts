@@ -34,3 +34,26 @@ export async function getActiveSessions(): Promise<{ success: boolean; count?: n
   // Supabase doesn't expose session list via client SDK — placeholder for future
   return { success: true, count: 1 }
 }
+
+export async function updateProfile(
+  fullName: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const cookieStore = await cookies()
+    const supabase = createServerSupabaseClient(cookieStore)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) return { success: false, error: 'Não autenticado' }
+
+    const { createAdminSupabaseClient } = await import('@kyra/database')
+    const admin = createAdminSupabaseClient()
+    const { error } = await (admin as any)
+      .from('profiles')
+      .update({ full_name: fullName.trim() })
+      .eq('id', user.id)
+
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (e: any) {
+    return { success: false, error: e?.message ?? String(e) }
+  }
+}
