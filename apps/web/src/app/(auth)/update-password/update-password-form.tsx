@@ -6,12 +6,77 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+/**
+ * Fluxo de primeiro acesso e recuperação de senha.
+ *
+ * Esta página pode ser atingida de duas formas:
+ * 1. Via /auth/callback (forgot-password, PKCE) — sessão já estabelecida pelo servidor
+ * 2. Via generateLink admin (provisioning) — Supabase redireciona aqui com ?code= ou #access_token=
+ *    O @supabase/ssr com detectSessionInUrl:true cuida automaticamente do hash.
+ *    Para ?code= sem verifier (link admin), trocamos o code client-side.
+ */
 export function UpdatePasswordForm() {
   const [password, setPassword] = React.useState('')
   const [confirm, setConfirm] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [done, setDone] = React.useState(false)
+  const [sessionReady, setSessionReady] = React.useState(false)
+
+  // Estabelece sessão a partir de ?code= ou #access_token= na URL (link admin)
+  React.useEffect(() => {
+    async function setupSession() {
+      const supabase = createClient()
+
+      // Verificar se já tem sessão ativa (veio via /auth/callback)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setSessionReady(true)
+        return
+      }
+
+      // Tentar trocar ?code= (link admin PKCE sem verifier — Supabase trata server-side)
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+      if (code) {
+        const { error: exchErr } = await supabase.auth.exchangeCodeForSession(code)
+        if (!exchErr) {
+          // Limpar o code da URL sem reload
+          window.history.replaceState({}, '', window.location.pathname)
+          setSessionReady(true)
+          return
+        }
+      }
+
+      // Verificar hash (implicit flow — #access_token=...)
+      if (window.location.hash.includes('access_token')) {
+        // @supabase/ssr detecta automaticamente via onAuthStateChange
+        const { data: { session: hashSession } } = await supabase.auth.getSession()
+        if (hashSession) {
+          window.history.replaceState({}, '', window.location.pathname)
+          setSessionReady(true)
+          return
+        }
+      }
+
+      // Aguardar onAuthStateChange para detectSessionInUrl (hash)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session && (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY')) {
+          subscription.unsubscribe()
+          window.history.replaceState({}, '', window.location.pathname)
+          setSessionReady(true)
+        }
+      })
+
+      // Timeout: se em 5s não tiver sessão, mostrar erro
+      setTimeout(() => {
+        subscription.unsubscribe()
+        setSessionReady(true) // mostra o form — o submit vai indicar se tem sessão ou não
+      }, 5000)
+    }
+
+    setupSession()
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -32,7 +97,6 @@ export function UpdatePasswordForm() {
       const { error: updateErr } = await supabase.auth.updateUser({ password })
 
       if (updateErr) {
-        // Sessão expirou (link usado mais de uma vez ou muito tarde)
         if (updateErr.message.toLowerCase().includes('session') || updateErr.status === 401) {
           setError('Este link já expirou ou foi utilizado. Solicite um novo acesso ao administrador.')
         } else {
@@ -42,7 +106,6 @@ export function UpdatePasswordForm() {
       }
 
       setDone(true)
-      // Redireciona para o dashboard após breve pausa
       setTimeout(() => {
         window.location.href = '/dashboard'
       }, 1500)
@@ -57,6 +120,14 @@ export function UpdatePasswordForm() {
     return (
       <div className="rounded-lg bg-teal-50 border border-teal-200 px-4 py-3 text-sm text-teal-800">
         Senha criada com sucesso! Redirecionando para o painel…
+      </div>
+    )
+  }
+
+  if (!sessionReady) {
+    return (
+      <div className="text-center text-sm text-muted-foreground py-4">
+        Verificando acesso…
       </div>
     )
   }

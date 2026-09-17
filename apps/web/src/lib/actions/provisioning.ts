@@ -292,7 +292,7 @@ export async function provisionTenant(
       const { data: linkData } = await admin.auth.admin.generateLink({
         type: 'recovery',
         email: input.admin_email,
-        options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.kyraestoque.com.br'}/auth/callback?next=/update-password` },
+        options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.kyraestoque.com.br'}/update-password` },
       })
 
       const accessLink = linkData?.properties?.action_link ?? null
@@ -311,7 +311,7 @@ export async function provisionTenant(
             name: input.admin_name,
             companyName: input.company_name,
             planName: plan.name,
-            accessLink: accessLink ?? `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.kyraestoque.com.br'}/auth/login`,
+            accessLink: accessLink ?? `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.kyraestoque.com.br'}/auth/login`,
             trialDays,
           }),
         }),
