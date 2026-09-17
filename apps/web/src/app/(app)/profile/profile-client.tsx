@@ -68,7 +68,7 @@ export function ProfileClient({
 
   return (
     <div className="max-w-xl space-y-8">
-      <PageHeader title="Meu perfil" subtitle="Gerencie seus dados pessoais e segurança da conta." />
+      <PageHeader title="Meu perfil" description="Gerencie seus dados pessoais e segurança da conta." />
 
       {/* ── Informações pessoais ───────────────────────────────── */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
