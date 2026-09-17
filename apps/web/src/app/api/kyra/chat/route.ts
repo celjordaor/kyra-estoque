@@ -9,6 +9,7 @@
  * - IA nunca acessa banco diretamente — usa executeTool() com RLS
  */
 import { NextRequest } from 'next/server'
+import { completeCheckpoint } from '@/lib/actions/onboarding'
 import Anthropic from '@anthropic-ai/sdk'
 import type { MessageParam } from '@anthropic-ai/sdk/resources/messages'
 import { cookies } from 'next/headers'
@@ -134,6 +135,8 @@ export async function POST(req: NextRequest) {
     await incrementUsage(companyId, 'ai.queries.monthly').catch(err => {
       console.error('[kyra/chat] incrementUsage error:', err)
     })
+    // D7: kyra_consultada — silencioso
+    completeCheckpoint(companyId, 'kyra_consultada').catch(() => {})
 
     // ── 8. Retornar resposta ──────────────────────────────────
     // Extrai apenas blocos de texto (não inclui tool_use)

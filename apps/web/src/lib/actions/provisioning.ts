@@ -21,6 +21,7 @@
  *  - kyra_config: coluna JSONB em companies
  */
 
+import { completeCheckpointAdmin } from '@/lib/actions/onboarding'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 
@@ -345,6 +346,8 @@ export async function provisionTenant(
     })
     .eq('id', jobId)
 
+  // D0: conta_pronta — silencioso
+  await completeCheckpointAdmin(companyId, 'conta_pronta').catch(() => {})
   return { success: true, job_id: jobId, company_id: companyId }
 }
 

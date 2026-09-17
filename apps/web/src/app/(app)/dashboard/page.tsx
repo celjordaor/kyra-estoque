@@ -17,15 +17,17 @@ async function DashboardContent() {
   const { data: { user } } = await supabase.auth.getUser()
 
   let userName = 'usuário'
+  let companyId: string | null = null
   if (user) {
     const admin = createAdminSupabaseClient()
     const { data: profileData } = await admin
       .from('profiles')
-      .select('full_name')
+      .select('full_name, company_id')
       .eq('id', user.id)
       .single()
-    const profile = profileData as { full_name: string | null } | null
+    const profile = profileData as { full_name: string | null; company_id?: string | null } | null
     if (profile?.full_name) userName = profile.full_name
+    companyId = (profile as any)?.company_id ?? null
   }
 
   const { data, error } = await getDashboardData()
@@ -35,6 +37,7 @@ async function DashboardContent() {
       initialData={data}
       initialError={error}
       userName={userName}
+      companyId={companyId}
     />
   )
 }

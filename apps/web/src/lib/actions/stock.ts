@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { completeCheckpoint } from '@/lib/actions/onboarding'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 
@@ -212,6 +213,8 @@ export async function createStockMovement(values: {
     await (supabase as any).from('products').update({ stock_quantity: Math.max(0, newQty) }).eq('id', values.product_id)
 
     revalidatePath('/stock')
+    // D3: estoque_configurado — silencioso
+    completeCheckpoint(companyId, 'estoque_configurado').catch(() => {})
     return { success: true }
   } catch (e) {
     return { success: false, error: String(e) }

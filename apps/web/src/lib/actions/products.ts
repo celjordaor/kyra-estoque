@@ -8,6 +8,7 @@ import type { ProductFormValues, ProductFilterValues } from '@/lib/validations/p
 import { productSchema } from '@/lib/validations/product'
 import { getStockStatus } from '@kyra/business-rules'
 import { getLimit } from '@kyra/business-rules'
+import { completeCheckpoint } from '@/lib/actions/onboarding'
 
 // ── Helper: server client + company_id ────────────────────────
 async function getServerContext() {
@@ -187,6 +188,8 @@ export async function createProduct(
     if (error) return { success: false, error: error.message }
 
     revalidatePath('/products')
+    // D1: primeiro_produto — silencioso
+    completeCheckpoint(companyId, 'primeiro_produto').catch(() => {})
     return { success: true, id: data.id }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : 'Erro desconhecido' }

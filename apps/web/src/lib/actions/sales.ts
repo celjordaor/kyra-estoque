@@ -1,5 +1,6 @@
 'use server'
 
+import { completeCheckpoint } from '@/lib/actions/onboarding'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 
@@ -427,6 +428,8 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
   const { error: itemsErr } = await (supabase as any).from('sale_items').insert(saleItems)
   if (itemsErr) throw new Error(itemsErr.message)
 
+  // D5: primeira_venda — silencioso
+  completeCheckpoint(companyId, 'primeira_venda').catch(() => {})
   return { id: sale.id, sale_number: sale.sale_number }
 }
 

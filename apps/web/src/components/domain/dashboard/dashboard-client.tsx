@@ -13,11 +13,13 @@ import { RecentActivity } from './recent-activity'
 import { DashboardEmptyState, DashboardErrorState } from './dashboard-states'
 import { RefreshCw } from 'lucide-react'
 import { KyraCard } from '@/components/ai/kyra-card'
+import { OnboardingChecklist } from './onboarding-checklist'
 
 interface DashboardClientProps {
   initialData: DashboardData | null
   initialError: string | null
   userName: string
+  companyId?: string | null
 }
 
 function greeting(name: string) {
@@ -48,7 +50,7 @@ function buildKyraSummary(kpis: DashboardData['kpis']): string {
   return parts.join('. ') + '.'
 }
 
-export function DashboardClient({ initialData, initialError, userName }: DashboardClientProps) {
+export function DashboardClient({ initialData, initialError, userName, companyId }: DashboardClientProps) {
   const [data, setData] = useState<DashboardData | null>(initialData)
   const [error, setError] = useState<string | null>(initialError)
   const [isPending, startTransition] = useTransition()
@@ -93,6 +95,9 @@ export function DashboardClient({ initialData, initialError, userName }: Dashboa
       {/* Normal state */}
       {data && !isEmpty && (
         <>
+          {/* Onboarding */}
+          {companyId && <OnboardingChecklist companyId={companyId} />}
+
           {/* KPIs */}
           <KPIRow kpis={data.kpis} />
 
