@@ -347,7 +347,7 @@ export async function provisionTenant(
     .eq('id', jobId)
 
   // D0: conta_pronta — silencioso
-  await completeCheckpointAdmin(companyId, 'conta_pronta').catch(() => {})
+  if (companyId) await completeCheckpointAdmin(companyId, 'conta_pronta').catch(() => {})
   return { success: true, job_id: jobId, company_id: companyId }
 }
 
