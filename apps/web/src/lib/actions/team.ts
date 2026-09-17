@@ -264,7 +264,7 @@ export async function inviteMember(
       // Evita depender do Site URL do Supabase e de race conditions no browser
       const hashedToken = linkData.properties?.hashed_token
       const actionLink = hashedToken
-        ? `${appUrl}/auth/callback?token_hash=${hashedToken}&type=invite&next=/update-password`
+        ? `${appUrl}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=invite&next=/update-password`
         : (linkData.properties?.action_link ?? null)
 
       // Send email via Resend REST API (no package needed)

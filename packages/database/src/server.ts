@@ -4,6 +4,9 @@ import type { Database } from './types'
 
 type CookieStore = {
   getAll(): { name: string; value: string }[]
+  /** set() individual — disponível em Route Handlers do Next.js */
+  set?(name: string, value: string, options?: Record<string, unknown>): void
+  /** setAll() — disponível em implementações customizadas / middleware */
   setAll?(cookies: { name: string; value: string; options?: Record<string, unknown> }[]): void
 }
 
@@ -11,8 +14,11 @@ type CookieStore = {
  * Server-side Supabase client para uso em Server Components e Route Handlers.
  * Usa anon key + cookies do usuário — respeita RLS.
  *
- * setAll é opcional: ReadonlyRequestCookies (layouts/Server Components) não o implementa.
- * O try/catch interno já trata o caso sem setAll graciosamente.
+ * IMPORTANTE: o Next.js cookies() expõe set() individual, não setAll().
+ * A implementação abaixo tenta setAll() e cai em set() individual para
+ * garantir que os cookies de sessão sejam gravados corretamente em Route Handlers
+ * (ex: /auth/callback — sem isso, verifyOtp() e exchangeCodeForSession() funcionam
+ * mas os Set-Cookie headers não chegam ao browser).
  */
 export function createServerSupabaseClient(cookieStore: CookieStore) {
   const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
@@ -29,9 +35,17 @@ export function createServerSupabaseClient(cookieStore: CookieStore) {
       getAll: () => cookieStore.getAll(),
       setAll: (cookiesToSet: { name: string; value: string; options: any }[]) => {
         try {
-          cookieStore.setAll?.(cookiesToSet)
+          if (typeof cookieStore.setAll === 'function') {
+            // Middleware / implementações customizadas que expõem setAll()
+            cookieStore.setAll(cookiesToSet)
+          } else if (typeof cookieStore.set === 'function') {
+            // Next.js cookies() em Route Handlers — só tem set() individual
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set!(name, value, options)
+            })
+          }
         } catch {
-          // Server Component sem capacidade de setar cookies — ignorado
+          // Server Component (read-only) — ignorado graciosamente
         }
       },
     },

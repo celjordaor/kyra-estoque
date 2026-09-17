@@ -300,7 +300,7 @@ export async function provisionTenant(
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.kyraestoque.com.br'
       const hashedToken = linkData?.properties?.hashed_token
       const accessLink = hashedToken
-        ? `${appUrl}/auth/callback?token_hash=${hashedToken}&type=recovery&next=/update-password`
+        ? `${appUrl}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=recovery&next=/update-password`
         : (linkData?.properties?.action_link ?? null)
 
       const emailRes = await fetch('https://api.resend.com/emails', {
