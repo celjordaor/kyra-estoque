@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { FormField } from '@/components/ui/form-field'
@@ -1882,12 +1883,12 @@ function IntelligenceSection() {
         </FormField>
 
         <FormField id="kyra-instructions" label="Instruções personalizadas" className="mt-4">
-          <textarea
+          <Textarea
             value={config.custom_instructions}
             onChange={e => patch({ custom_instructions: e.target.value })}
             placeholder="Ex: Sempre priorize sugestões de reposição de estoque. Foque nos produtos mais vendidos..."
             rows={3}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            resize="none"
             maxLength={1000}
           />
           <p className="text-xs text-muted-foreground mt-1">{config.custom_instructions.length}/1000 caracteres</p>

@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { CepInput } from '@/components/ui/cep-input'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { FormField } from '@/components/ui/form-field'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -251,8 +252,8 @@ export function CustomersPage() {
               </FormField>
 
               <FormField id="notes" label="Observações">
-                <textarea
-                  className="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                <Textarea
+                  resize="none"
                   placeholder="Observações internas..."
                   value={values.notes}
                   onChange={e => set('notes', e.target.value)}

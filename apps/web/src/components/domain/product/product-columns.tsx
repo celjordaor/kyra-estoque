@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { Package, MoreHorizontal, Pencil, Trash2, ToggleLeft, ToggleRight, ArrowUpDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -154,17 +155,14 @@ function StockMovementPopover({
             {/* Quantidade */}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Quantidade</label>
-              <input
+              <Input
                 type="number"
                 min="0.001"
                 step="any"
                 value={qty}
                 onChange={e => setQty(e.target.value)}
                 placeholder="0"
-                className={cn(
-                  'w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm tabular-nums',
-                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0'
-                )}
+                className="py-1.5 text-sm tabular-nums"
                 autoFocus
                 required
               />
@@ -173,15 +171,12 @@ function StockMovementPopover({
             {/* Observação */}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Observação <span className="opacity-50">(opcional)</span></label>
-              <input
+              <Input
                 type="text"
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="ex: Compra NF 1234"
-                className={cn(
-                  'w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm',
-                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0'
-                )}
+                className="py-1.5 text-sm"
               />
             </div>
 

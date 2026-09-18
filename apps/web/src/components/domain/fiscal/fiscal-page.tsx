@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 // Badge import removido (não usado diretamente)
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -312,8 +313,9 @@ function DocsTab({ hasFeature }: { hasFeature: boolean }) {
               Informe a justificativa do cancelamento (mínimo 15 caracteres).
               O cancelamento só é aceito pela SEFAZ dentro de 24h da emissão.
             </p>
-            <textarea
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm resize-none h-24 mb-4"
+            <Textarea
+              resize="none"
+              className="h-24 mb-4"
               placeholder="Ex: Erro na emissão, produto não entregue..."
               value={cancelText}
               onChange={e => setCancelText(e.target.value)}

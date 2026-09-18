@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
@@ -362,11 +363,11 @@ function LeadsTab() {
                   )}
                   <div>
                     <p className="text-xs font-medium mb-1.5">Notas internas</p>
-                    <textarea
+                    <Textarea
                       value={notes[lead.id] ?? lead.notes ?? ''}
                       onChange={e => setNotes(prev => ({ ...prev, [lead.id]: e.target.value }))}
                       rows={2}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                      resize="none"
                       placeholder="Adicionar notas..."
                     />
                   </div>
@@ -474,11 +475,11 @@ function TicketsTab() {
                 <div className="px-4 pb-4 border-t border-border space-y-3 pt-3">
                   <div>
                     <p className="text-xs font-medium mb-1.5">Notas do admin</p>
-                    <textarea
+                    <Textarea
                       value={adminNotes[ticket.id] ?? ticket.admin_notes ?? ''}
                       onChange={e => setAdminNotes(prev => ({ ...prev, [ticket.id]: e.target.value }))}
                       rows={2}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                      resize="none"
                       placeholder="Anotações internas..."
                     />
                   </div>

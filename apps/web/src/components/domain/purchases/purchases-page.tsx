@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { NumberInput } from '@/components/ui/number-input'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { KyraCard } from '@/components/ai/kyra-card'
@@ -683,8 +684,8 @@ export function PurchasesPage() {
               </FormField>
 
               <FormField id="notes" label="Observação">
-                <textarea
-                  className="flex min-h-[72px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                <Textarea
+                  resize="none"
                   placeholder="Observações sobre o pedido..."
                   value={notes}
                   onChange={e => setNotes(e.target.value)}

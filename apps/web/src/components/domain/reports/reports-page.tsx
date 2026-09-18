@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { UpgradeBanner } from '@/components/ui/upgrade-prompt'
@@ -85,16 +86,16 @@ function DateRangePicker({ start, end, onChange }: {
   return (
     <div className="flex items-center gap-2">
       <label className="text-sm text-muted-foreground">De</label>
-      <input
+      <Input
         type="date" value={start}
         onChange={ev => onChange(ev.target.value, end)}
-        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        className="py-1.5 text-sm"
       />
       <label className="text-sm text-muted-foreground">até</label>
-      <input
+      <Input
         type="date" value={end}
         onChange={ev => onChange(start, ev.target.value)}
-        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        className="py-1.5 text-sm"
       />
     </div>
   )

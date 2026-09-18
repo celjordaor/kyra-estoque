@@ -7,6 +7,7 @@ import {
   TrendingUp, ArrowRight, CheckCircle2, Loader2, BarChart2,
   Users, Zap, Calendar
 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/layout/page-header'
 import { KyraCard } from '@/components/ai/kyra-card'
 import { UpgradePrompt } from '@/components/ui/upgrade-prompt'
@@ -388,7 +389,7 @@ export function KyraPage() {
                 </p>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="relative flex-1">
-                    <input
+                    <Input
                       ref={inputRef}
                       type="text"
                       placeholder="Pergunte algo sobre sua operação…"
@@ -396,8 +397,7 @@ export function KyraPage() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
                       className={cn(
-                        'w-full rounded-xl border border-border bg-background px-4 py-2.5 pr-11 text-sm',
-                        'placeholder:text-muted-foreground outline-none',
+                        'rounded-xl px-4 py-2.5 pr-11 text-sm outline-none',
                         'focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all',
                       )}
                     />
@@ -498,7 +498,7 @@ export function KyraPage() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <input
+                  <Input
                     ref={inputRef}
                     type="text"
                     placeholder="O que você quer saber?"
@@ -507,8 +507,7 @@ export function KyraPage() {
                     onKeyDown={handleKeyDown}
                     disabled={thinking}
                     className={cn(
-                      'w-full rounded-xl border border-border bg-background px-4 py-2.5 pr-11 text-sm',
-                      'placeholder:text-muted-foreground outline-none',
+                      'rounded-xl px-4 py-2.5 pr-11 text-sm outline-none',
                       'focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all',
                       thinking && 'opacity-60'
                     )}
