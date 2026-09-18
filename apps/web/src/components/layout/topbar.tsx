@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Bell, Search, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@kyra/database'
@@ -66,6 +67,11 @@ export function Topbar({
           <Menu className="h-5 w-5" />
         </Button>
       )}
+
+      {/* Logo — desktop, left side */}
+      <Link href="/dashboard" className="hidden md:flex items-center shrink-0">
+        <Image src="/kyra-logo.png" alt="Kyra Estoque" height={32} width={160} priority />
+      </Link>
 
       {/* Company name (mobile) */}
       {companyName && (
