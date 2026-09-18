@@ -127,7 +127,7 @@ function RecommendationCard({ type, title, sub, action, href }: RecommendationPr
       {action && href && (
         <button
           type="button"
-          onClick={() => router.push(href)}
+          onClick={() => router.push(href as never)}
           className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
           {action} <ArrowRight className="h-3 w-3" />
