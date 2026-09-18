@@ -33,21 +33,21 @@ export function KyraJaCuidou() {
 
         const builtItems: StatusItem[] = [
           {
-            icon: <Shield className="h-4 w-4 text-teal-600" />,
+            icon: <Shield className="h-4 w-4 text-primary" />,
             title: 'Estoque monitorado',
             description: totalProducts > 0
               ? `${totalProducts} produto${totalProducts !== 1 ? 's' : ''} monitorados${attentionProducts > 0 ? ` · ${attentionProducts} em atenção` : ''}`
               : 'Alertas configurados para todos os produtos',
           },
           {
-            icon: <FileText className="h-4 w-4 text-teal-600" />,
+            icon: <FileText className="h-4 w-4 text-primary" />,
             title: 'Automações ativas',
             description: activeAutomations > 0
               ? `${activeAutomations} automação${activeAutomations !== 1 ? 'ões' : ''} ativa${activeAutomations !== 1 ? 's' : ''} e funcionando`
               : 'Nenhuma automação ativa — configure em Automações',
           },
           {
-            icon: <RefreshCw className="h-4 w-4 text-teal-600" />,
+            icon: <RefreshCw className="h-4 w-4 text-primary" />,
             title: 'Sincronização ativa',
             description: lastActivity
               ? `Última atividade: ${new Date(lastActivity.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`
@@ -60,17 +60,17 @@ export function KyraJaCuidou() {
         // Fallback to static descriptions on error
         setItems([
           {
-            icon: <Shield className="h-4 w-4 text-teal-600" />,
+            icon: <Shield className="h-4 w-4 text-primary" />,
             title: 'Estoque monitorado',
             description: 'Alertas configurados para todos os produtos',
           },
           {
-            icon: <FileText className="h-4 w-4 text-teal-600" />,
+            icon: <FileText className="h-4 w-4 text-primary" />,
             title: 'Dados analisados',
             description: 'Padrões identificados e recomendações atualizadas',
           },
           {
-            icon: <RefreshCw className="h-4 w-4 text-teal-600" />,
+            icon: <RefreshCw className="h-4 w-4 text-primary" />,
             title: 'Sincronização ativa',
             description: 'Informações atualizadas em tempo real',
           },
@@ -84,26 +84,26 @@ export function KyraJaCuidou() {
   }, [])
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+    <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 mb-4">
-        <CheckCircle2 className="h-4 w-4 text-teal-600" />
-        <h3 className="text-sm font-semibold text-slate-700">Kyra já cuidou</h3>
+        <CheckCircle2 className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Kyra já cuidou</h3>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-4">
-          <Loader2 className="h-4 w-4 text-teal-500 animate-spin" />
+          <Loader2 className="h-4 w-4 text-primary animate-spin" />
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {items.map(item => (
             <div key={item.title} className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                 {item.icon}
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-800">{item.title}</p>
-                <p className="text-[11px] text-slate-500">{item.description}</p>
+                <p className="text-xs font-semibold text-foreground">{item.title}</p>
+                <p className="text-[11px] text-muted-foreground">{item.description}</p>
               </div>
             </div>
           ))}

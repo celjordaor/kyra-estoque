@@ -3,6 +3,10 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Send, Loader2, ArrowRight, RotateCcw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const QUICK_PROMPTS = [
   'O que devo comprar?',
@@ -102,35 +106,35 @@ export function CopilotStrip() {
   }
 
   return (
-    <div className="rounded-2xl border border-teal-200 bg-white p-5">
+    <div className="rounded-2xl border border-primary/20 bg-card p-5">
       {/* Header */}
       <div className="flex items-center gap-2 mb-1">
-        <div className="w-7 h-7 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
           <Sparkles className="h-3.5 w-3.5 text-white" />
         </div>
-        <p className="text-sm font-semibold text-slate-800">Pergunte sobre sua operação</p>
+        <p className="text-sm font-semibold text-foreground">Pergunte sobre sua operação</p>
       </div>
-      <p className="text-xs text-slate-400 mb-4 ml-9">Você não precisa procurar a informação. Pergunte ao Kyra.</p>
+      <p className="text-xs text-muted-foreground mb-4 ml-9">Você não precisa procurar a informação. Pergunte ao Kyra.</p>
 
       {/* Input */}
       <div className="flex gap-2 mb-3">
-        <input
+        <Input
           ref={inputRef}
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend(input)}
           placeholder="Ex: Quais produtos preciso repor essa semana?"
-          className="flex-1 text-sm border border-slate-200 rounded-xl px-4 py-2.5 bg-slate-50 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+          className="flex-1"
         />
-        <button
+        <Button
           onClick={() => handleSend(input)}
           disabled={loading || !input.trim()}
-          className="px-4 h-10 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          loading={loading}
+          className="shrink-0 gap-1.5"
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          {!loading && <span>Enviar</span>}
-        </button>
+          {!loading && <><Send className="h-4 w-4" /><span>Enviar</span></>}
+        </Button>
       </div>
 
       {/* Quick prompts */}
@@ -143,8 +147,8 @@ export function CopilotStrip() {
             className={[
               'text-xs font-medium border rounded-full px-3 py-1.5 transition-colors disabled:opacity-50',
               activePrompt === prompt && response
-                ? 'bg-teal-600 text-white border-teal-600'
-                : 'text-teal-700 bg-teal-50 hover:bg-teal-100 border-teal-200',
+                ? 'bg-primary text-white border-primary'
+                : 'text-primary bg-primary/10 hover:bg-primary/20 border-primary/20',
             ].join(' ')}
           >
             {prompt}
@@ -154,8 +158,8 @@ export function CopilotStrip() {
 
       {/* Loading state */}
       {loading && (
-        <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 animate-pulse">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" />
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
           O Kyra está analisando sua operação…
         </div>
       )}
@@ -177,38 +181,38 @@ export function CopilotStrip() {
       {/* Inline response */}
       {response && !loading && !error && (
         <div className="mt-4">
-          <p className="text-xs text-slate-400 mb-2">
-            Você perguntou: <span className="font-semibold text-slate-600">{response.question}</span>
+          <p className="text-xs text-muted-foreground mb-2">
+            Você perguntou: <span className="font-semibold text-muted-foreground">{response.question}</span>
           </p>
-          <div className="rounded-xl border border-teal-100 bg-teal-50/60 p-4">
-            <p className="text-sm font-semibold text-slate-800 mb-3 leading-snug whitespace-pre-line">
+          <div className="rounded-xl border border-primary/10 bg-primary/10/60 p-4">
+            <p className="text-sm font-semibold text-foreground mb-3 leading-snug whitespace-pre-line">
               {response.summary}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
               <a
                 href={response.primaryHref}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold transition-colors"
               >
                 {response.primaryAction}
                 <ArrowRight className="h-3 w-3" />
               </a>
               <button
                 onClick={handleReset}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-border bg-card hover:bg-muted/50 text-muted-foreground text-xs font-semibold transition-colors"
               >
                 <RotateCcw className="h-3 w-3" />
                 Nova pergunta
               </button>
               <button
                 onClick={() => router.push(`/kyra?q=${encodeURIComponent(response.question)}` as never)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors"
               >
                 Continuar no Kyra
                 <ArrowRight className="h-3 w-3" />
               </button>
             </div>
           </div>
-          <p className="mt-2 text-[10px] text-slate-300 text-right">
+          <p className="mt-2 text-[10px] text-muted-foreground/60 text-right">
             O Kyra analisa seus dados e ajuda você a tomar decisões.
           </p>
         </div>

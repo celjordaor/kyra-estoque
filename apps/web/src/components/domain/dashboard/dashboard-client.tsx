@@ -71,13 +71,13 @@ export function DashboardClient({ initialData, initialError, userName, companyId
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 font-display">{greeting(userName)}</h1>
-          <p className="text-sm text-slate-500">Aqui está o resumo da sua operação hoje.</p>
+          <h1 className="text-xl font-extrabold text-foreground font-display">{greeting(userName)}</h1>
+          <p className="text-sm text-muted-foreground">Aqui está o resumo da sua operação hoje.</p>
         </div>
         <button
           onClick={handleRetry}
           disabled={isPending}
-          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-teal-600 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isPending ? 'animate-spin' : ''}`} />
           Atualizar

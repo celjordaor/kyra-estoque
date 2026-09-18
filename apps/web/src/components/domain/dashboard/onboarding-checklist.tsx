@@ -69,53 +69,53 @@ export function OnboardingChecklist({ companyId }: { companyId: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-teal-200 bg-teal-50/60 overflow-hidden">
+    <div className="rounded-xl border border-primary/20 bg-primary/10/60 overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-teal-50 transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-primary/10 transition-colors"
       >
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-teal-100 shrink-0">
-          <Rocket className="h-4 w-4 text-teal-600" />
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 shrink-0">
+          <Rocket className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-teal-900">Configure seu estoque</p>
+          <p className="text-sm font-semibold text-primary">Configure seu estoque</p>
           <div className="flex items-center gap-2 mt-0.5">
             {/* Progress bar */}
-            <div className="flex-1 h-1.5 rounded-full bg-teal-200 overflow-hidden">
+            <div className="flex-1 h-1.5 rounded-full bg-primary/20 overflow-hidden">
               <div
-                className="h-full rounded-full bg-teal-500 transition-all duration-500"
+                className="h-full rounded-full bg-primary transition-all duration-500"
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="text-xs text-teal-700 shrink-0">{completed}/{total} concluído{completed !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-primary shrink-0">{completed}/{total} concluído{completed !== 1 ? 's' : ''}</span>
           </div>
         </div>
         {open ? (
-          <ChevronUp className="h-4 w-4 text-teal-500 shrink-0" />
+          <ChevronUp className="h-4 w-4 text-primary shrink-0" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-teal-500 shrink-0" />
+          <ChevronDown className="h-4 w-4 text-primary shrink-0" />
         )}
       </button>
 
       {/* Checklist body */}
       {open && (
-        <div className="border-t border-teal-200 divide-y divide-teal-100">
+        <div className="border-t border-primary/20 divide-y divide-border">
           {checkpoints.map(cp => (
             <div
               key={cp.checkpoint_key}
               className={`flex items-center gap-3 px-4 py-2.5 ${cp.completed ? 'opacity-60' : ''}`}
             >
               {cp.completed ? (
-                <CheckCircle2 className="h-4 w-4 text-teal-500 shrink-0" />
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
               ) : (
-                <Circle className="h-4 w-4 text-teal-300 shrink-0" />
+                <Circle className="h-4 w-4 text-primary/40 shrink-0" />
               )}
-              <span className={`text-sm ${cp.completed ? 'line-through text-teal-700' : 'text-slate-700'}`}>
+              <span className={`text-sm ${cp.completed ? 'line-through text-primary' : 'text-foreground'}`}>
                 {cp.display_name}
               </span>
               {cp.completed && cp.completed_at && (
-                <span className="ml-auto text-xs text-teal-500 shrink-0">
+                <span className="ml-auto text-xs text-primary shrink-0">
                   {new Date(cp.completed_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                 </span>
               )}
@@ -126,7 +126,7 @@ export function OnboardingChecklist({ companyId }: { companyId: string }) {
           <div className="px-4 py-2.5 flex justify-end">
             <button
               onClick={handleDismiss}
-              className="text-xs text-teal-600 hover:text-teal-800 transition-colors"
+              className="text-xs text-primary hover:text-primary-hover transition-colors"
             >
               Não mostrar novamente
             </button>
