@@ -27,7 +27,7 @@ import { getCategoriesAdmin, createCategory, updateCategory, deleteCategory } fr
 import { getBrands, createBrand, updateBrand, deleteBrand } from '@/lib/actions/brands'
 import { getCoupons, createCoupon, updateCoupon, deleteCoupon } from '@/lib/actions/coupons'
 import { getCompanySettings, updateCompanyProfile, updateOperationSettings, uploadCompanyLogo, getFiscalConfig, updateFiscalConfig, type FiscalConfig } from '@/lib/actions/settings'
-import { getSubscriptionInfo, type SubscriptionInfo } from '@/lib/actions/billing'
+import { getSubscriptionInfo, getInvoiceHistory, getBillingPortalUrl, type SubscriptionInfo, type InvoiceItem } from '@/lib/actions/billing'
 import {
   getTeamMembers, updateMemberRole, removeMember, inviteMember,
   getRoles, createRole, updateRole, deleteRole,
@@ -146,13 +146,37 @@ function UserAvatar({ name, avatarUrl, size = 'md' }: { name: string; avatarUrl?
 function SubscriptionSection() {
   const [info, setInfo] = React.useState<SubscriptionInfo | null>(null)
   const [loading, setLoading] = React.useState(true)
+  const [invoices, setInvoices] = React.useState<InvoiceItem[]>([])
+  const [invoicesLoading, setInvoicesLoading] = React.useState(true)
+  const [portalLoading, setPortalLoading] = React.useState(false)
 
   React.useEffect(() => {
     getSubscriptionInfo()
       .then(setInfo)
       .catch(() => toast.error('Erro ao carregar assinatura'))
       .finally(() => setLoading(false))
+    getInvoiceHistory()
+      .then(setInvoices)
+      .catch(() => {})
+      .finally(() => setInvoicesLoading(false))
   }, [])
+
+  async function handleManagePlan() {
+    setPortalLoading(true)
+    try {
+      const url = await getBillingPortalUrl()
+      if (url) window.open(url, '_blank', 'noopener,noreferrer')
+      else toast.info('Portal de gerenciamento não disponível. Entre em contato com o suporte.')
+    } catch {
+      toast.error('Erro ao abrir portal de gerenciamento.')
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
+  function handleUpgrade() {
+    window.open('/#planos', '_blank', 'noopener,noreferrer')
+  }
 
   if (loading) {
     return (
@@ -211,7 +235,7 @@ function SubscriptionSection() {
               Faça upgrade para manter o acesso a todas as funcionalidades.
             </p>
           </div>
-          <Button size="sm" className="ml-auto shrink-0">Fazer upgrade</Button>
+          <Button size="sm" className="ml-auto shrink-0" onClick={handleUpgrade}>Fazer upgrade</Button>
         </div>
       )}
 
@@ -223,7 +247,7 @@ function SubscriptionSection() {
             <p className="font-medium text-destructive text-sm">Pagamento atrasado</p>
             <p className="text-xs text-muted-foreground mt-0.5">Regularize seu pagamento para evitar a suspensão da conta.</p>
           </div>
-          <Button size="sm" variant="destructive" className="ml-auto shrink-0">Regularizar</Button>
+          <Button size="sm" variant="destructive" className="ml-auto shrink-0" onClick={handleManagePlan} disabled={portalLoading}>{portalLoading ? 'Abrindo...' : 'Regularizar'}</Button>
         </div>
       )}
 
@@ -245,7 +269,7 @@ function SubscriptionSection() {
               </p>
             )}
           </div>
-          <Button variant="outline" size="sm" className="shrink-0">Gerenciar plano</Button>
+          <Button variant="outline" size="sm" className="shrink-0" onClick={handleManagePlan} disabled={portalLoading}>{portalLoading ? 'Abrindo...' : 'Gerenciar plano'}</Button>
         </div>
       </SectionCard>
 
@@ -294,6 +318,63 @@ function SubscriptionSection() {
           </div>
         </SectionCard>
       )}
+
+      {/* Invoice history */}
+      <SectionCard>
+        <p className="font-semibold mb-1">Histórico de faturas</p>
+        <p className="text-sm text-muted-foreground mb-5">Últimas cobranças da sua assinatura</p>
+        {invoicesLoading ? (
+          <div className="flex flex-col gap-2">
+            {[1,2,3].map(i => <div key={i} className="h-10 rounded-lg border border-border bg-muted animate-pulse" />)}
+          </div>
+        ) : invoices.length === 0 ? (
+          <div className="flex flex-col items-center justify-center min-h-[80px] text-center gap-2">
+            <p className="text-sm text-muted-foreground">Nenhuma fatura encontrada.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col divide-y divide-border">
+            {invoices.map(inv => {
+              const statusLabel: Record<string, string> = {
+                PENDING: 'Pendente', RECEIVED: 'Pago', CONFIRMED: 'Confirmado',
+                OVERDUE: 'Vencido', REFUNDED: 'Reembolsado', CANCELLED: 'Cancelado',
+              }
+              const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
+                PENDING: 'neutral', RECEIVED: 'success', CONFIRMED: 'success',
+                OVERDUE: 'warning', REFUNDED: 'neutral', CANCELLED: 'danger',
+              }
+              const paymentLink = inv.invoiceUrl ?? inv.bankSlipUrl
+              return (
+                <div key={inv.id} className="flex items-center justify-between py-3 gap-4">
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-sm font-medium">
+                      {new Date(inv.dueDate).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {inv.paidAt
+                        ? `Pago em ${new Date(inv.paidAt).toLocaleDateString('pt-BR')}`
+                        : `Vence em ${new Date(inv.dueDate).toLocaleDateString('pt-BR')}`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-semibold tabular-nums">
+                      {(inv.amountCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                    <Badge variant={statusVariant[inv.status] ?? 'neutral'} className="text-[11px]">
+                      {statusLabel[inv.status] ?? inv.status}
+                    </Badge>
+                    {paymentLink && (
+                      <a href={paymentLink} target="_blank" rel="noopener noreferrer"
+                        className="text-xs text-primary underline-offset-4 hover:underline">
+                        Ver boleto
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </SectionCard>
     </div>
   )
 }

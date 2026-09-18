@@ -40,10 +40,7 @@ export interface SubscriptionInfo {
 
 export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
   try {
-    console.log('[billing] step 1: getServerContext')
     const { admin, companyId } = await getServerContext()
-    console.log('[billing] step 2: companyId =', companyId)
-
     const { data: sub, error: subErr } = await (admin as any)
       .from('subscriptions')
       .select(`
@@ -59,7 +56,6 @@ export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
       .limit(1)
       .maybeSingle()
 
-    console.log('[billing] step 3: sub =', JSON.stringify(sub), 'err =', subErr?.message)
 
     if (!sub) return null
 
@@ -67,23 +63,14 @@ export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
       id: string; name: string; slug: string
       plan_entitlements: { feature_key: string; int_value: number | null; bool_value: boolean | null }[]
     } | null
-
-    console.log('[billing] step 4: plan =', plan?.name, 'entitlements =', plan?.plan_entitlements?.length)
-
     const entMap: Record<string, { int_value: number | null; bool_value: boolean | null }> = {}
     for (const e of plan?.plan_entitlements ?? []) {
       entMap[e.feature_key] = { int_value: e.int_value, bool_value: e.bool_value }
     }
-
-    console.log('[billing] step 5: entMap financial.enabled =', entMap['financial.enabled'])
-
     const [{ count: productCount }, { count: userCount }] = await Promise.all([
       (admin as any).from('products').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
       (admin as any).from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
     ])
-
-    console.log('[billing] step 6: productCount =', productCount, 'userCount =', userCount)
-
     let trialDaysLeft: number | null = null
     if (sub.status === 'trialing' && sub.trial_ends_at) {
       const diff = new Date(sub.trial_ends_at).getTime() - Date.now()
@@ -121,11 +108,100 @@ export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
       usage,
       features,
     }
-
-    console.log('[billing] step 7: returning result planName =', result.planName)
     return result
   } catch (err) {
     console.error('[billing] getSubscriptionInfo ERRO:', err)
+    return null
+  }
+}
+
+// ── Invoice History ────────────────────────────────────────────
+
+export interface InvoiceItem {
+  id: string
+  dueDate: string
+  paidAt: string | null
+  amountCents: number
+  status: 'PENDING' | 'RECEIVED' | 'CONFIRMED' | 'OVERDUE' | 'REFUNDED' | 'CANCELLED'
+  billingType: string
+  invoiceUrl: string | null
+  bankSlipUrl: string | null
+}
+
+const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL ?? 'https://sandbox.asaas.com/api/v3'
+
+async function asaasFetch(path: string) {
+  const apiKey = process.env.ASAAS_API_KEY
+  if (!apiKey) throw new Error('ASAAS_API_KEY não configurado')
+  const res = await fetch(`${ASAAS_BASE_URL}${path}`, {
+    headers: { 'Content-Type': 'application/json', 'access_token': apiKey },
+    next: { revalidate: 0 },
+  })
+  if (!res.ok) throw new Error(`Asaas ${res.status}: ${await res.text()}`)
+  return res.json()
+}
+
+export async function getInvoiceHistory(): Promise<InvoiceItem[]> {
+  try {
+    const { admin, companyId } = await getServerContext()
+    const { data: sub } = await (admin as any)
+      .from('subscriptions')
+      .select('provider, provider_subscription_id')
+      .eq('company_id', companyId)
+      .in('status', ['active', 'trialing', 'past_due'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!sub || sub.provider !== 'asaas' || !sub.provider_subscription_id) return []
+
+    const data = await asaasFetch(`/subscriptions/${sub.provider_subscription_id}/payments?limit=12&offset=0`)
+    const payments: Record<string, unknown>[] = data?.data ?? []
+
+    const statusMap: Record<string, InvoiceItem['status']> = {
+      PENDING: 'PENDING', RECEIVED: 'RECEIVED', CONFIRMED: 'CONFIRMED',
+      OVERDUE: 'OVERDUE', REFUNDED: 'REFUNDED', CANCELLED: 'CANCELLED',
+      REFUND_REQUESTED: 'REFUNDED', CHARGEBACK_REQUESTED: 'CANCELLED',
+      DUNNING_REQUESTED: 'OVERDUE', DUNNING_RECEIVED: 'RECEIVED',
+      AWAITING_RISK_ANALYSIS: 'PENDING',
+    }
+
+    return payments.map(p => ({
+      id:          p.id as string,
+      dueDate:     p.dueDate as string,
+      paidAt:      (p.paymentDate ?? null) as string | null,
+      amountCents: Math.round(((p.value as number) ?? 0) * 100),
+      status:      statusMap[p.status as string] ?? 'PENDING',
+      billingType: (p.billingType as string) ?? '',
+      invoiceUrl:  (p.invoiceUrl ?? null) as string | null,
+      bankSlipUrl: (p.bankSlipUrl ?? null) as string | null,
+    }))
+  } catch (err) {
+    console.error('[billing] getInvoiceHistory ERRO:', err)
+    return []
+  }
+}
+
+export async function getBillingPortalUrl(): Promise<string | null> {
+  try {
+    const { admin, companyId } = await getServerContext()
+    const { data: sub } = await (admin as any)
+      .from('subscriptions')
+      .select('provider, provider_subscription_id')
+      .eq('company_id', companyId)
+      .in('status', ['active', 'trialing', 'past_due'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!sub || sub.provider !== 'asaas' || !sub.provider_subscription_id) return null
+
+    // Busca o pagamento mais recente pendente ou vencido para retornar o link de cobrança
+    const data = await asaasFetch(`/subscriptions/${sub.provider_subscription_id}/payments?limit=1&offset=0`)
+    const payment = (data?.data ?? [])[0] as Record<string, unknown> | undefined
+    return (payment?.invoiceUrl ?? payment?.bankSlipUrl ?? null) as string | null
+  } catch (err) {
+    console.error('[billing] getBillingPortalUrl ERRO:', err)
     return null
   }
 }

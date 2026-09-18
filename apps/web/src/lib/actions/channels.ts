@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 import { canUse, hasFeature } from '@kyra/business-rules'
 import { revalidatePath } from 'next/cache'
+import { randomBytes } from 'crypto'
 import { getChannelAdapter, channelHasAdapter } from '@/lib/channels'
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -172,6 +173,7 @@ export async function connectChannel(input: ConnectChannelInput): Promise<{
     orders_today:       0,
     last_sync_at:       null,
     sync_error:         null,
+    webhook_secret:     randomBytes(32).toString('hex'),
   }
 
   const { error } = await (admin as any)
