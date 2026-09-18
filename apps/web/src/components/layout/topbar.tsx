@@ -70,7 +70,7 @@ export function Topbar({
 
       {/* Logo — desktop, left side */}
       <Link href="/dashboard" className="hidden md:flex items-center shrink-0">
-        <Image src="/kyra-logo.png" alt="Kyra Estoque" height={44} width={132} priority style={{ objectFit: "contain" }} />
+        <Image src="/kyra-logo.png" alt="Kyra Estoque" height={52} width={156} priority style={{ objectFit: "contain" }} />
       </Link>
 
       {/* Company name (mobile) */}
