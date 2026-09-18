@@ -277,3 +277,29 @@ export async function updateFiscalConfig(
     return { success: false, error: String(e) }
   }
 }
+
+// ── Perfil do usuário atual ────────────────────────────────────
+
+/**
+ * Retorna o primeiro nome do usuário autenticado.
+ * Usado para personalizar saudações (ex: "Bom dia, João").
+ */
+export async function getCurrentUserFirstName(): Promise<string> {
+  try {
+    const cookieStore = await cookies()
+    const supabase = createServerSupabaseClient(cookieStore)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return ''
+    const admin = createAdminSupabaseClient()
+    const { data } = await (admin as any)
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+    const fullName = (data as { full_name: string | null } | null)?.full_name ?? ''
+    // Retorna apenas o primeiro nome
+    return fullName.split(' ')[0] ?? ''
+  } catch {
+    return ''
+  }
+}

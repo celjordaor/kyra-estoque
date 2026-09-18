@@ -46,8 +46,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     avatarUrl: profile?.avatar_url ?? undefined,
   }
 
+  // Buscar contagem de notificações não-lidas para o sino do topbar
+  const { count: notificationCount } = await (admin as any)
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('company_id', profile.company_id)
+    .or(`user_id.is.null,user_id.eq.${user.id}`)
+    .eq('read', false)
+
   return (
-    <AppShell user={shellUser}>
+    <AppShell user={shellUser} notificationCount={notificationCount ?? 0}>
       {children}
     </AppShell>
   )

@@ -162,11 +162,24 @@ function SubscriptionSection() {
   }, [])
 
   async function handleManagePlan() {
+    // Em período de teste → leva para a página de planos para upgrade
+    if (info?.status === 'trialing') {
+      window.open('/#planos', '_blank', 'noopener,noreferrer')
+      return
+    }
+
     setPortalLoading(true)
     try {
       const url = await getBillingPortalUrl()
-      if (url) window.open(url, '_blank', 'noopener,noreferrer')
-      else toast.info('Portal de gerenciamento não disponível. Entre em contato com o suporte.')
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer')
+      } else {
+        // Assinatura ainda não migrada para Asaas — direcionar ao suporte
+        toast.info(
+          'Gerencie sua assinatura pelo WhatsApp ou e-mail: suporte@kyraestoque.com.br',
+          { duration: 8000 }
+        )
+      }
     } catch {
       toast.error('Erro ao abrir portal de gerenciamento.')
     } finally {

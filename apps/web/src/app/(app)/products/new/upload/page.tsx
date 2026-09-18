@@ -58,21 +58,31 @@ type WizardState =
   | { step: 'validation'; draft: ProductDraft }
   | { step: 'success';    name: string }
 
-// ── AI simulation ──────────────────────────────────────────────
+// ── AI Vision via API ─────────────────────────────────────────
 
-async function analyzeProductImage(_url: string): Promise<AIResult> {
-  await new Promise((r) => setTimeout(r, 2200))
-  return {
-    overallConfidence: 0.87,
-    fields: {
-      name:        { value: 'Camiseta Básica Preta — M', confidence: 0.98 },
-      category:    { value: 'Vestuário',                  confidence: 0.96 },
-      brand:       { value: 'Marca X',                    confidence: 0.72 },
-      color:       { value: 'Preto',                      confidence: 0.85 },
-      size:        { value: 'M',                          confidence: 0.90 },
-      description: { value: 'Camiseta básica de algodão, confortável e versátil.', confidence: 0.80 },
-      tags:        { value: 'camiseta, básico, algodão',  confidence: 0.75 },
-    },
+/**
+ * Analisa a imagem do produto via Anthropic Vision (server-side).
+ * Em caso de falha retorna null — o wizard trata como low_conf / editing.
+ */
+async function analyzeProductImage(imageDataUrl: string): Promise<AIResult | null> {
+  try {
+    const res = await fetch('/api/kyra/analyze-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageDataUrl }),
+    })
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      console.warn('[analyzeProductImage] API error:', res.status, body)
+      return null
+    }
+
+    const data = await res.json()
+    return data as AIResult
+  } catch (err) {
+    console.warn('[analyzeProductImage] Falha na análise por IA:', err)
+    return null
   }
 }
 
@@ -264,8 +274,18 @@ export default function ProductUploadPage() {
     analyzeProductImage(imageDataUrl).then(async (result) => {
       clearInterval(interval)
       setAnalysisStep(ANALYSIS_STEPS.length)
-      const draft = await buildDraft(result, imageDataUrl)
-      setTimeout(() => {
+      setTimeout(async () => {
+        if (!result) {
+          // IA indisponível — vai direto para edição manual com rascunho vazio
+          toast.info('Análise por IA indisponível. Preencha os dados manualmente.')
+          const emptyDraft: ProductDraft = {
+            name: '', category: { id: null, label: '' }, brand: { id: null, label: '' },
+            color: '', size: '', description: '', tags: '', imageDataUrl,
+          }
+          setState({ step: 'editing', draft: emptyDraft })
+          return
+        }
+        const draft = await buildDraft(result, imageDataUrl)
         if (result.overallConfidence >= 0.70) setState({ step: 'result', imageDataUrl, result, draft })
         else setState({ step: 'low_conf', imageDataUrl, result })
       }, 400)

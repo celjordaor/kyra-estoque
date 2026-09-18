@@ -12,6 +12,7 @@ import { KyraCard } from '@/components/ai/kyra-card'
 import { UpgradePrompt } from '@/components/ui/upgrade-prompt'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { getCurrentUserFirstName } from '@/lib/actions/settings'
 
 // ── Helpers ──────────────────────────────────────────────────────
 function fmtCurrency(v: number) {
@@ -229,10 +230,16 @@ export function KyraPage() {
   const [thinking, setThinking] = React.useState(false)
   const [analysisStep, setAnalysisStep] = React.useState(-1) // -1 = not analyzing
   const [upgradePrompt, setUpgradePrompt] = React.useState<{ open: boolean; limit?: number | null }>({ open: false })
+  const [userName, setUserName] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)
   const chatEndRef = React.useRef<HTMLDivElement>(null)
   const searchParams = useSearchParams()
   const autoSentRef = React.useRef(false)
+
+  // Buscar nome do usuário para personalizar a saudação
+  React.useEffect(() => {
+    getCurrentUserFirstName().then(setUserName).catch(() => {})
+  }, [])
 
   // Auto-send query vindo do dashboard via ?q=
   React.useEffect(() => {
@@ -361,7 +368,7 @@ export function KyraPage() {
               {/* Greeting */}
               <KyraCard
                 label="Kyra"
-                description={`${greeting()}, Celso. Analisei sua operação e encontrei alguns pontos que merecem atenção hoje.`}
+                description={`${greeting()}${userName ? `, ${userName}` : ''}. Analisei sua operação e encontrei alguns pontos que merecem atenção hoje.`}
               />
 
               {/* Compact insight grid 2×2 */}
