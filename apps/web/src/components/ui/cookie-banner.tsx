@@ -77,18 +77,18 @@ export function CookieBanner() {
       aria-modal="false"
       className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 md:bottom-4 md:left-auto md:right-4 md:max-w-md"
     >
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-2xl border border-border overflow-hidden">
         {/* Header */}
-        <div className="px-5 pt-5 pb-4 border-b border-slate-100">
+        <div className="px-5 pt-5 pb-4 border-b border-border">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xl" aria-hidden="true">🍪</span>
-            <h2 className="text-base font-bold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>
+            <h2 className="text-base font-bold text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
               Preferências de Cookies
             </h2>
           </div>
-          <p className="text-sm text-slate-500 leading-relaxed" style={{ fontFamily: 'var(--font-sans)' }}>
+          <p className="text-sm text-muted-foreground leading-relaxed" style={{ fontFamily: 'var(--font-sans)' }}>
             Usamos cookies para melhorar sua experiência. Saiba mais em nossa{' '}
-            <Link href="/privacy" className="text-teal-600 hover:underline font-medium">
+            <Link href="/privacy" className="text-primary hover:underline font-medium">
               Política de Privacidade
             </Link>
             .
@@ -97,7 +97,7 @@ export function CookieBanner() {
 
         {/* Detailed preferences (toggleable) */}
         {detailed && (
-          <div className="px-5 py-4 space-y-3 border-b border-slate-100">
+          <div className="px-5 py-4 space-y-3 border-b border-border">
             {([
               {
                 key: 'necessary' as const,
@@ -126,15 +126,15 @@ export function CookieBanner() {
             ] as const).map((item) => (
               <div key={item.key} className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-slate-800" style={{ fontFamily: 'var(--font-sans)' }}>
+                  <p className="text-sm font-semibold text-foreground" style={{ fontFamily: 'var(--font-sans)' }}>
                     {item.label}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed" style={{ fontFamily: 'var(--font-sans)' }}>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5 leading-relaxed" style={{ fontFamily: 'var(--font-sans)' }}>
                     {item.desc}
                   </p>
                 </div>
                 {item.locked ? (
-                  <span className="mt-0.5 text-xs text-teal-600 font-semibold shrink-0" style={{ fontFamily: 'var(--font-sans)' }}>
+                  <span className="mt-0.5 text-xs text-primary font-semibold shrink-0" style={{ fontFamily: 'var(--font-sans)' }}>
                     Sempre ativo
                   </span>
                 ) : (
@@ -145,12 +145,12 @@ export function CookieBanner() {
                     onClick={() =>
                       setPrefs(p => ({ ...p, [item.key]: !p[item.key as keyof typeof prefs] }))
                     }
-                    className={`shrink-0 mt-0.5 w-10 h-5 rounded-full transition-colors relative focus:outline-none focus:ring-2 focus:ring-teal-400 ${
-                      prefs[item.key as keyof typeof prefs] ? 'bg-teal-500' : 'bg-slate-200'
+                    className={`shrink-0 mt-0.5 w-10 h-5 rounded-full transition-colors relative focus:outline-none focus:ring-2 focus:ring-ring ${
+                      prefs[item.key as keyof typeof prefs] ? 'bg-primary' : 'bg-muted'
                     }`}
                   >
                     <span
-                      className={`block w-4 h-4 rounded-full bg-white shadow-sm absolute top-0.5 transition-transform ${
+                      className={`block w-4 h-4 rounded-full bg-card shadow-sm absolute top-0.5 transition-transform ${
                         prefs[item.key as keyof typeof prefs] ? 'translate-x-5' : 'translate-x-0.5'
                       }`}
                     />
@@ -166,7 +166,7 @@ export function CookieBanner() {
           <button
             type="button"
             onClick={acceptAll}
-            className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold transition-colors"
+            className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-colors"
             style={{ fontFamily: 'var(--font-sans)' }}
           >
             Aceitar todos
@@ -175,7 +175,7 @@ export function CookieBanner() {
             <button
               type="button"
               onClick={acceptNecessary}
-              className="flex-1 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium transition-colors"
+              className="flex-1 py-2 rounded-xl border border-border hover:bg-muted/50 text-muted-foreground text-sm font-medium transition-colors"
               style={{ fontFamily: 'var(--font-sans)' }}
             >
               Somente necessários
@@ -184,7 +184,7 @@ export function CookieBanner() {
               <button
                 type="button"
                 onClick={savePrefs}
-                className="flex-1 py-2 rounded-xl border border-teal-200 hover:bg-teal-50 text-teal-700 text-sm font-semibold transition-colors"
+                className="flex-1 py-2 rounded-xl border border-primary/20 hover:bg-primary/10 text-primary text-sm font-semibold transition-colors"
                 style={{ fontFamily: 'var(--font-sans)' }}
               >
                 Salvar preferências
@@ -193,7 +193,7 @@ export function CookieBanner() {
               <button
                 type="button"
                 onClick={() => setDetailed(true)}
-                className="flex-1 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 text-sm font-medium transition-colors"
+                className="flex-1 py-2 rounded-xl border border-border hover:bg-muted/50 text-muted-foreground text-sm font-medium transition-colors"
                 style={{ fontFamily: 'var(--font-sans)' }}
               >
                 Personalizar
