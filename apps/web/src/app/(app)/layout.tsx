@@ -34,6 +34,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect('/login?error=no_company')
   }
 
+  // Usuário desativado → bloquear acesso (ex-funcionário removido da empresa)
+  if (profile?.is_active === false) {
+    redirect('/login?error=account_inactive')
+  }
+
   const shellUser = {
     name: profile?.full_name ?? user.email ?? 'Usuário',
     email: user.email ?? '',

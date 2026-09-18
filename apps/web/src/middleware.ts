@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth') || pathname === '/forgot-password' || pathname === '/update-password'
   const isApiRoute = pathname.startsWith('/api/')  // API routes handle their own auth
-  const isPublicRoute = pathname === '/' || isAuthRoute || isApiRoute
+  const isPublicRoute = pathname === '/' || isAuthRoute || isApiRoute || pathname.startsWith('/privacy') || pathname.startsWith('/terms')
 
   // Não autenticado tentando acessar rota protegida → redireciona para /login
   if (!user && !isPublicRoute) {

@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const asaasToken = req.headers.get('asaas-access-token')
     const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN
-    if (expectedToken && asaasToken !== expectedToken) {
+    if (!expectedToken || asaasToken !== expectedToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
