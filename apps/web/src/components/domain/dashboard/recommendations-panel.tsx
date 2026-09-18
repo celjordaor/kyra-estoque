@@ -88,7 +88,7 @@ export function RecommendationsPanel({ recommendations }: RecommendationsPanelPr
                 )}
               </div>
 
-              <button onClick={() => router.push(`/kyra?q=${encodeURIComponent(rec.title + ': ' + rec.description)}`)} className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg py-2 transition-colors">
+              <button onClick={() => router.push(`/kyra?q=${encodeURIComponent(rec.title + ': ' + rec.description)}` as never)} className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg py-2 transition-colors">
                 Executar com Kyra
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>

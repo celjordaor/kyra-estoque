@@ -200,7 +200,7 @@ export function CopilotStrip() {
                 Nova pergunta
               </button>
               <button
-                onClick={() => router.push(`/kyra?q=${encodeURIComponent(response.question)}`)}
+                onClick={() => router.push(`/kyra?q=${encodeURIComponent(response.question)}` as never)}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-semibold transition-colors"
               >
                 Continuar no Kyra
