@@ -62,7 +62,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
     <TooltipProvider delayDuration={200}>
       <aside
         className={cn(
-          'flex h-full flex-col bg-[#1B3D34] transition-all duration-300',
+          'flex h-full flex-col bg-sidebar transition-all duration-300',
           collapsed ? 'w-16' : 'w-60'
         )}
       >
@@ -71,8 +71,8 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
           'flex h-14 shrink-0 items-center px-3',
           collapsed ? 'justify-center' : 'gap-2.5'
         )}>
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(110,231,207,0.13)] border border-[rgba(110,231,207,0.28)]">
-            <Sparkles className="h-4 w-4 text-[#6EE7CF]" />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent/13 border border-sidebar-accent/28">
+            <Sparkles className="h-4 w-4 text-sidebar-accent" />
           </span>
           {!collapsed && (
             <div className="flex flex-col leading-none">
@@ -82,7 +82,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
           )}
         </div>
 
-        <div className="h-px mx-3 bg-[rgba(110,231,207,0.11)]" />
+        <div className="h-px mx-3 bg-sidebar-accent/11" />
 
         {/* Nav */}
         <nav className="flex flex-1 flex-col overflow-y-auto px-2 py-3 gap-0.5">
@@ -91,14 +91,14 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
             <NavLink key={item.href} item={item} collapsed={collapsed} active={isActive(item.href)} />
           ))}
 
-          <div className="h-px mx-1 my-2 bg-[rgba(110,231,207,0.11)]" />
+          <div className="h-px mx-1 my-2 bg-sidebar-accent/11" />
 
           {/* Grupo 2: Clientes, Fornecedores, Compras, Vendas, PDV */}
           {NAV_COMMERCIAL.map((item) => (
             <NavLink key={item.href} item={item} collapsed={collapsed} active={isActive(item.href)} />
           ))}
 
-          <div className="h-px mx-1 my-2 bg-[rgba(110,231,207,0.11)]" />
+          <div className="h-px mx-1 my-2 bg-sidebar-accent/11" />
 
           {/* Grupo 3: Canais, Automações, Relatórios */}
           {NAV_DIGITAL.map((item) => (
@@ -108,7 +108,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
           <NavLink item={NAV_FINANCIAL} collapsed={collapsed} active={isActive(NAV_FINANCIAL.href)} />
           <NavLink item={NAV_FISCAL}    collapsed={collapsed} active={isActive(NAV_FISCAL.href)}    />
 
-          <div className="h-px mx-1 my-2 bg-[rgba(110,231,207,0.11)]" />
+          <div className="h-px mx-1 my-2 bg-sidebar-accent/11" />
 
           {/* Kyra — always teal highlight */}
           <NavLink item={NAV_KYRA} collapsed={collapsed} active={isActive(NAV_KYRA.href)} kyra />
@@ -117,7 +117,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
         </nav>
 
         {/* Bottom */}
-        <div className="h-px mx-3 bg-[rgba(110,231,207,0.11)]" />
+        <div className="h-px mx-3 bg-sidebar-accent/11" />
         <div className="flex flex-col gap-1 px-2 py-2">
           <NavLink item={NAV_BOTTOM} collapsed={collapsed} active={pathname === NAV_BOTTOM.href} />
 
@@ -162,18 +162,18 @@ function NavLink({
   const iconCls = cn(
     'flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-md border transition-colors',
     kyra
-      ? 'bg-[rgba(110,231,207,0.17)] border-[rgba(110,231,207,0.38)]'
+      ? 'bg-sidebar-accent/17 border-sidebar-accent/38'
       : active
-        ? 'bg-[rgba(110,231,207,0.13)] border-[rgba(110,231,207,0.42)]'
-        : 'border-[rgba(110,231,207,0.26)]'
+        ? 'bg-sidebar-accent/13 border-sidebar-accent/42'
+        : 'border-sidebar-accent/26'
   )
 
-  const iconColor = (kyra || active) ? 'text-[#6EE7CF]' : 'text-white/50'
+  const iconColor = (kyra || active) ? 'text-sidebar-accent' : 'text-white/50'
 
   const labelCls = cn(
     'flex-1 text-[13px]',
     kyra
-      ? 'text-[#6EE7CF] font-semibold'
+      ? 'text-sidebar-accent font-semibold'
       : active
         ? 'text-white font-semibold'
         : 'text-white/50 font-medium'
@@ -186,7 +186,7 @@ function NavLink({
         'flex h-9 w-full items-center rounded-md transition-colors',
         collapsed ? 'justify-center px-1.5' : 'gap-2 px-1.5',
         active
-          ? 'bg-[#234D42] border-l-[3px] border-[#6EE7CF]'
+          ? 'bg-sidebar-active border-l-[3px] border-sidebar-accent'
           : 'border-l-[3px] border-transparent hover:bg-white/5',
       )}
     >
@@ -199,7 +199,7 @@ function NavLink({
           'ml-auto flex h-5 min-w-5 items-center justify-center rounded px-1.5',
           'text-[9.5px] font-semibold',
           active
-            ? 'bg-[rgba(110,231,207,0.2)] text-[#6EE7CF]'
+            ? 'bg-sidebar-accent/20 text-sidebar-accent'
             : 'bg-white/10 text-white/45'
         )}>
           {item.badge}

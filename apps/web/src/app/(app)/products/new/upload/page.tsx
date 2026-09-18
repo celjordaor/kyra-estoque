@@ -9,6 +9,9 @@ import {
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { EntitySelect, type EntityRef } from '@/components/ui/entity-select'
 import { createProduct, uploadProductImage } from '@/lib/actions/products'
 import { searchCategories, createCategoryAndReturn } from '@/lib/actions/categories'
@@ -563,8 +566,6 @@ export default function ProductUploadPage() {
     function setField<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
       setState({ step: 'editing', draft: { ...draft, [key]: value } })
     }
-    const inputCls = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition'
-    const labelCls = 'text-xs font-medium text-muted-foreground'
 
     return (
       <Shell backLabel="Voltar" onBack={() => setState({ step: 'upload' })}>
@@ -581,21 +582,19 @@ export default function ProductUploadPage() {
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className={labelCls}>Nome do produto *</label>
-            <input className={inputCls} value={draft.name}
-              onChange={(e) => setField('name', e.target.value)} placeholder="Ex: Camiseta Básica Preta M" />
+            <Label className="text-xs text-muted-foreground">Nome do produto *</Label>
+            <Input value={draft.name} onChange={(e) => setField('name', e.target.value)} placeholder="Ex: Camiseta Básica Preta M" />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className={labelCls}>SKU (código interno)</label>
-            <input className={inputCls} value={draft.sku ?? ''}
-              onChange={(e) => setField('sku', e.target.value)} placeholder="Ex: CAM-PRT-M-001" />
+            <Label className="text-xs text-muted-foreground">SKU (código interno)</Label>
+            <Input value={draft.sku ?? ''} onChange={(e) => setField('sku', e.target.value)} placeholder="Ex: CAM-PRT-M-001" />
           </div>
 
           {/* Categoria + Marca — EntitySelect */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Categoria</label>
+              <Label className="text-xs text-muted-foreground">Categoria</Label>
               <EntitySelect
                 value={draft.category}
                 onChange={(v) => setField('category', v)}
@@ -606,7 +605,7 @@ export default function ProductUploadPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Marca</label>
+              <Label className="text-xs text-muted-foreground">Marca</Label>
               <EntitySelect
                 value={draft.brand}
                 onChange={(v) => setField('brand', v)}
@@ -620,42 +619,35 @@ export default function ProductUploadPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Cor</label>
-              <input className={inputCls} value={draft.color}
-                onChange={(e) => setField('color', e.target.value)} placeholder="Ex: Preto" />
+              <Label className="text-xs text-muted-foreground">Cor</Label>
+              <Input value={draft.color} onChange={(e) => setField('color', e.target.value)} placeholder="Ex: Preto" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Tamanho</label>
-              <input className={inputCls} value={draft.size}
-                onChange={(e) => setField('size', e.target.value)} placeholder="Ex: M" />
+              <Label className="text-xs text-muted-foreground">Tamanho</Label>
+              <Input value={draft.size} onChange={(e) => setField('size', e.target.value)} placeholder="Ex: M" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Preço de venda (R$)</label>
-              <input className={inputCls} type="number" min={0} step={0.01} value={draft.sale_price ?? ''}
-                onChange={(e) => setField('sale_price', e.target.value ? Number(e.target.value) : undefined)}
-                placeholder="0,00" />
+              <Label className="text-xs text-muted-foreground">Preço de venda (R$)</Label>
+              <Input type="number" min={0} step={0.01} value={draft.sale_price ?? ''} onChange={(e) => setField('sale_price', e.target.value ? Number(e.target.value) : undefined)} placeholder="0,00" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Preço de custo (R$)</label>
-              <input className={inputCls} type="number" min={0} step={0.01} value={draft.cost_price ?? ''}
-                onChange={(e) => setField('cost_price', e.target.value ? Number(e.target.value) : undefined)}
-                placeholder="0,00" />
+              <Label className="text-xs text-muted-foreground">Preço de custo (R$)</Label>
+              <Input type="number" min={0} step={0.01} value={draft.cost_price ?? ''} onChange={(e) => setField('cost_price', e.target.value ? Number(e.target.value) : undefined)} placeholder="0,00" />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className={labelCls}>Descrição</label>
-            <textarea className={inputCls} rows={3} value={draft.description}
+            <Label className="text-xs text-muted-foreground">Descrição</Label>
+            <Textarea rows={3} value={draft.description}
               onChange={(e) => setField('description', e.target.value)} placeholder="Descreva o produto…" />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className={labelCls}>Tags (separadas por vírgula)</label>
-            <input className={inputCls} value={draft.tags}
-              onChange={(e) => setField('tags', e.target.value)} placeholder="Ex: camiseta, básico, algodão" />
+            <Label className="text-xs text-muted-foreground">Tags (separadas por vírgula)</Label>
+            <Input value={draft.tags} onChange={(e) => setField('tags', e.target.value)} placeholder="Ex: camiseta, básico, algodão" />
           </div>
         </div>
 

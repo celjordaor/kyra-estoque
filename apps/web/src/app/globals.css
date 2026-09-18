@@ -55,6 +55,11 @@
   --radius-2xl: 1rem;
   --radius-pill: 9999px;
 
+  /* ── Sidebar Shell ─────────────────────────────────────── */
+  --color-sidebar:         #1B3D34;
+  --color-sidebar-active:  #234D42;
+  --color-sidebar-accent:  #6EE7CF;
+
   /* ── Badges semânticos (sempre pill) ────────────────────── */
   --badge-height: 24px;
 }

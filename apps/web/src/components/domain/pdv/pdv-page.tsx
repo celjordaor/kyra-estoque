@@ -180,14 +180,14 @@ function CustomerCombobox({ value, onChange }: { value: string; onChange: (name:
     <div ref={containerRef} className="relative flex-1">
       <div className="relative">
         <User className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <input type="text" placeholder="Buscar ou digitar cliente..." value={query}
+        <Input
+          type="text"
+          placeholder="Buscar ou digitar cliente..."
+          value={query}
           onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
-          className={cn(
-            'w-full rounded-lg border border-border bg-background pl-8 pr-3 py-1.5 text-xs',
-            'placeholder:text-muted-foreground outline-none',
-            'focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all'
-          )}
+          inputSize="sm"
+          className="pl-8"
         />
       </div>
       {open && customers.length > 0 && (
@@ -652,18 +652,15 @@ export function PdvPage() {
                   <div className="flex gap-1.5">
                     <div className="relative flex-1">
                       <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input
+                      <Input
                         type="text"
                         placeholder="Cupom de desconto"
                         value={couponInput}
                         onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError('') }}
                         onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon() }}
-                        className={cn(
-                          'w-full rounded-lg border bg-background pl-8 pr-3 py-1.5 text-xs uppercase tracking-wide',
-                          'placeholder:text-muted-foreground placeholder:normal-case placeholder:tracking-normal outline-none',
-                          'focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all',
-                          couponError ? 'border-danger/60' : 'border-border'
-                        )}
+                        inputSize="sm"
+                        error={!!couponError}
+                        className="pl-8 uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal"
                       />
                     </div>
                     <button
@@ -714,17 +711,14 @@ export function PdvPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground shrink-0">R$</span>
-                    <input
+                    <Input
                       type="text"
                       inputMode="decimal"
                       placeholder="0,00"
                       value={cashReceived}
                       onChange={e => setCashReceived(e.target.value.replace(/[^0-9,\.]/g, ''))}
-                      className={cn(
-                        'flex-1 rounded-md border bg-background px-2 py-1 text-sm tabular-nums outline-none',
-                        'focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all',
-                        'border-border'
-                      )}
+                      inputSize="sm"
+                      className="flex-1 tabular-nums"
                     />
                   </div>
                   {cashReceivedNum > 0 && (
