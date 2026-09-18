@@ -51,7 +51,7 @@ export function Topbar({
   return (
     <header
       className={cn(
-        'flex h-14 shrink-0 items-center gap-4 border-b-2 border-sidebar bg-card px-4',
+        'flex h-16 shrink-0 items-center gap-4 border-b-2 border-sidebar bg-card px-4',
         className
       )}
     >
@@ -70,7 +70,7 @@ export function Topbar({
 
       {/* Logo — desktop, left side */}
       <Link href="/dashboard" className="hidden md:flex items-center shrink-0">
-        <Image src="/kyra-logo.png" alt="Kyra Estoque" height={32} width={160} priority />
+        <Image src="/kyra-logo.png" alt="Kyra Estoque" height={44} width={132} priority style={{ objectFit: "contain" }} />
       </Link>
 
       {/* Company name (mobile) */}

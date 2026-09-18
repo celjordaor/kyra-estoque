@@ -28,6 +28,16 @@ export const metadata: Metadata = {
     default: 'Kyra — Gestão de Estoque',
   },
   description: 'Você vende. A gente cuida do resto.',
+  icons: {
+    icon: [
+      { url: '/kyra-icon.png', type: 'image/png', sizes: '512x512' },
+      { url: '/kyra-icon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    apple: [
+      { url: '/kyra-icon.png', type: 'image/png', sizes: '180x180' },
+    ],
+    shortcut: '/kyra-icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
