@@ -308,7 +308,7 @@ export function StockPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <p className="font-semibold">Movimentações recentes</p>
-          <Button variant="ghost" size="sm" className="text-primary" onClick={() => router.push("/stock/movements")}>Ver todas</Button>
+          <Button variant="ghost" size="sm" className="text-primary" onClick={() => router.push("/stock/movements" as never)}>Ver todas</Button>
         </div>
         <div className="rounded-xl border border-border overflow-hidden">
           <div className="overflow-x-auto">
