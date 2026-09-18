@@ -278,7 +278,17 @@ export default function ProductEditPage() {
                 <label className="text-sm font-medium text-foreground">
                   Nome <span className="text-destructive">*</span>
                 </label>
-                <button type="button" className="flex items-center gap-1.5 rounded-md border border-primary px-3 py-1 text-xs font-medium text-primary hover:bg-primary/5 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const name = watch('name')
+                    const q = name
+                      ? `Preencha os detalhes do produto "${name}": descrição, categoria sugerida e preço médio de mercado.`
+                      : 'Sugira nome, descrição e categoria para um novo produto do meu catálogo.'
+                    router.push(`/kyra?q=${encodeURIComponent(q)}`)
+                  }}
+                  className="flex items-center gap-1.5 rounded-md border border-primary px-3 py-1 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                >
                   <Sparkles className="h-3.5 w-3.5" />
                   Preencher com IA
                 </button>

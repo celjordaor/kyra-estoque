@@ -1,22 +1,28 @@
 'use client'
 
 import * as React from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Sparkles, Send, Clock, Package, TrendingDown, ShoppingCart,
-  TrendingUp, History, ArrowRight, CheckCircle2, Loader2, BarChart2,
+  TrendingUp, ArrowRight, CheckCircle2, Loader2, BarChart2,
   Users, Zap, Calendar
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { KyraCard } from '@/components/ai/kyra-card'
 import { UpgradePrompt } from '@/components/ui/upgrade-prompt'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getCurrentUserFirstName } from '@/lib/actions/settings'
+import { getDashboardData } from '@/lib/actions/dashboard'
+import type { DashboardData, AttentionItem } from '@/lib/actions/dashboard'
 
 // ── Helpers ──────────────────────────────────────────────────────
 function fmtCurrency(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function fmtPct(v: number) {
+  const sign = v >= 0 ? '+' : ''
+  return `${sign}${v.toFixed(1)}%`
 }
 
 function greeting() {
@@ -66,15 +72,16 @@ const ANALYSIS_STEPS = [
 // ── Compact insight card (chip-style label) ───────────────────────
 interface InsightCardProps {
   chipLabel: string
-  chipColor: string  // text + bg colors
+  chipColor: string
   chipBg: string
   value: string | number
   sub: string
   icon: React.ElementType
   iconColor: string
+  loading?: boolean
 }
 
-function InsightCard({ chipLabel, chipColor, chipBg, value, sub, icon: Icon, iconColor }: InsightCardProps) {
+function InsightCard({ chipLabel, chipColor, chipBg, value, sub, icon: Icon, iconColor, loading }: InsightCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2 hover:border-primary/30 transition-colors">
       <div className="flex items-center justify-between">
@@ -84,7 +91,11 @@ function InsightCard({ chipLabel, chipColor, chipBg, value, sub, icon: Icon, ico
         <Icon className={cn('h-4 w-4', iconColor)} />
       </div>
       <div>
-        <p className="text-xl font-bold leading-tight">{value}</p>
+        {loading ? (
+          <div className="h-7 w-24 bg-muted animate-pulse rounded-md" />
+        ) : (
+          <p className="text-xl font-bold leading-tight">{value}</p>
+        )}
         <p className="mt-0.5 text-xs text-muted-foreground leading-snug">{sub}</p>
       </div>
     </div>
@@ -97,6 +108,7 @@ interface RecommendationProps {
   title: string
   sub: string
   action?: string
+  href?: string
 }
 
 const REC_COLORS: Record<RecommendationProps['type'], string> = {
@@ -106,18 +118,31 @@ const REC_COLORS: Record<RecommendationProps['type'], string> = {
   success: 'border-l-green-600 bg-green-600/5',
 }
 
-function RecommendationCard({ type, title, sub, action }: RecommendationProps) {
+function RecommendationCard({ type, title, sub, action, href }: RecommendationProps) {
+  const router = useRouter()
   return (
     <div className={cn('rounded-xl border-l-4 p-3', REC_COLORS[type])}>
       <p className="text-sm font-medium">{title}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
-      {action && (
-        <button type="button" className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+      {action && href && (
+        <button
+          type="button"
+          onClick={() => router.push(href)}
+          className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+        >
           {action} <ArrowRight className="h-3 w-3" />
         </button>
       )}
     </div>
   )
+}
+
+// Priority → card type mapping
+function attentionTypeToCard(priority: AttentionItem['priority']): RecommendationProps['type'] {
+  if (priority === 'high') return 'danger'
+  if (priority === 'medium') return 'warning'
+  if (priority === 'opportunity') return 'success'
+  return 'info'
 }
 
 // ── Chat message ─────────────────────────────────────────────────
@@ -126,70 +151,6 @@ interface Message {
   role: 'user' | 'kyra'
   text: string
   ts: Date
-  rich?: boolean
-}
-
-// Rich response (table + highlights) shown for action-triggered queries
-function RichResponse() {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm">Aqui está um resumo da sua operação:</p>
-
-      {/* Highlight boxes */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-green-600 dark:text-green-400">Vendas hoje</p>
-          <p className="text-lg font-bold text-green-700 dark:text-green-300">R$ 4.280</p>
-          <p className="text-[10px] text-muted-foreground">+18% vs. ontem</p>
-        </div>
-        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">Alertas</p>
-          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">7 produtos</p>
-          <p className="text-[10px] text-muted-foreground">em risco de ruptura</p>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-lg border border-border overflow-hidden text-xs">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Produto</th>
-              <th className="text-right px-3 py-2 font-semibold text-muted-foreground">Estoque</th>
-              <th className="text-right px-3 py-2 font-semibold text-muted-foreground">Vendas/sem</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { name: 'Café Gourmet 500g', stock: 3, sales: 12 },
-              { name: 'Tênis Runner X2', stock: 1, sales: 8 },
-              { name: 'Whey Protein 1kg', stock: 5, sales: 15 },
-            ].map(r => (
-              <tr key={r.name} className="border-t border-border">
-                <td className="px-3 py-2">{r.name}</td>
-                <td className={cn('px-3 py-2 text-right font-semibold', r.stock <= 3 ? 'text-red-500' : '')}>
-                  {r.stock} un
-                </td>
-                <td className="px-3 py-2 text-right text-muted-foreground">{r.sales} un</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <p className="text-xs text-muted-foreground">Quer que eu crie pedidos de reposição para esses produtos?</p>
-
-      {/* Action buttons */}
-      <div className="flex gap-2 flex-wrap">
-        <button type="button" className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors">
-          Criar pedidos de compra
-        </button>
-        <button type="button" className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-          Ver relatório completo
-        </button>
-      </div>
-    </div>
-  )
 }
 
 function ChatMessage({ msg }: { msg: Message }) {
@@ -207,41 +168,43 @@ function ChatMessage({ msg }: { msg: Message }) {
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 mt-0.5">
         <Sparkles className="h-3.5 w-3.5 text-primary" />
       </div>
-      <div className="max-w-[90%] rounded-2xl rounded-tl-sm border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
-        {msg.rich ? <RichResponse /> : msg.text}
+      <div className="max-w-[90%] rounded-2xl rounded-tl-sm border border-primary/20 bg-primary/5 px-4 py-3 text-sm whitespace-pre-line">
+        {msg.text}
       </div>
     </div>
   )
 }
 
-// ── Recent conversation row ───────────────────────────────────────
-interface ConvRow { id: string; preview: string; ts: string }
-
-const RECENT_CONVS: ConvRow[] = [
-  { id: '1', preview: 'Quais produtos precisam de reposição?', ts: 'Hoje, 09:14' },
-  { id: '2', preview: 'Como estão minhas vendas esta semana?', ts: 'Ontem, 17:32' },
-  { id: '3', preview: 'Tenho produtos parados há mais de 30 dias?', ts: '05/09, 11:08' },
-]
-
 // ── Main page ─────────────────────────────────────────────────────
 export function KyraPage() {
+  const router = useRouter()
   const [input, setInput] = React.useState('')
   const [messages, setMessages] = React.useState<Message[]>([])
   const [thinking, setThinking] = React.useState(false)
-  const [analysisStep, setAnalysisStep] = React.useState(-1) // -1 = not analyzing
+  const [analysisStep, setAnalysisStep] = React.useState(-1)
   const [upgradePrompt, setUpgradePrompt] = React.useState<{ open: boolean; limit?: number | null }>({ open: false })
   const [userName, setUserName] = React.useState('')
+  const [dashData, setDashData] = React.useState<DashboardData | null>(null)
+  const [dashLoading, setDashLoading] = React.useState(true)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const chatEndRef = React.useRef<HTMLDivElement>(null)
   const searchParams = useSearchParams()
   const autoSentRef = React.useRef(false)
 
-  // Buscar nome do usuário para personalizar a saudação
+  // Fetch user name
   React.useEffect(() => {
     getCurrentUserFirstName().then(setUserName).catch(() => {})
   }, [])
 
-  // Auto-send query vindo do dashboard via ?q=
+  // Fetch dashboard KPIs and recommendations
+  React.useEffect(() => {
+    getDashboardData()
+      .then(({ data }) => setDashData(data))
+      .catch(() => {})
+      .finally(() => setDashLoading(false))
+  }, [])
+
+  // Auto-send query from dashboard via ?q=
   React.useEffect(() => {
     const q = searchParams?.get('q')
     if (q && !autoSentRef.current) {
@@ -273,7 +236,6 @@ export function KyraPage() {
     }
 
     try {
-      // Build conversation history for API (map 'kyra' → 'assistant')
       const apiMessages = [
         ...messages.map(m => ({
           role: m.role === 'user' ? 'user' as const : 'assistant' as const,
@@ -316,7 +278,7 @@ export function KyraPage() {
       }
       setMessages(prev => [...prev, kyraMsg])
 
-    } catch (err) {
+    } catch {
       const kyraErr: Message = {
         id: crypto.randomUUID(),
         role: 'kyra',
@@ -336,6 +298,16 @@ export function KyraPage() {
 
   const hasChat = messages.length > 0
   const isAnalyzing = analysisStep >= 0
+  const kpis = dashData?.kpis
+  const attentionItems = dashData?.attentionItems ?? []
+
+  // Compute sales growth %
+  const salesGrowth = kpis && kpis.salesRevenuePrev > 0
+    ? ((kpis.salesRevenue - kpis.salesRevenuePrev) / kpis.salesRevenuePrev) * 100
+    : null
+
+  // Recent user messages from this session for the sidebar
+  const recentMsgs = messages.filter(m => m.role === 'user').slice(-3).reverse()
 
   return (
     <>
@@ -350,12 +322,6 @@ export function KyraPage() {
         title="Assistente"
         description="Converse com a Kyra sobre sua operação."
         icon={Sparkles}
-        actions={
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <History className="h-4 w-4" />
-            Histórico
-          </Button>
-        }
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -374,44 +340,48 @@ export function KyraPage() {
               {/* Compact insight grid 2×2 */}
               <div className="grid grid-cols-2 gap-3">
                 <InsightCard
-                  chipLabel="Estoque"
+                  chipLabel="Estoque baixo"
                   chipBg="bg-red-500/10"
                   chipColor="text-red-600 dark:text-red-400"
-                  value="7 produtos"
-                  sub="podem acabar nos próximos 6 dias"
+                  value={kpis ? `${kpis.lowStockCount} produto${kpis.lowStockCount !== 1 ? 's' : ''}` : '—'}
+                  sub="abaixo do estoque mínimo"
                   icon={Package}
                   iconColor="text-red-400"
+                  loading={dashLoading}
                 />
                 <InsightCard
-                  chipLabel="Estoque parado"
+                  chipLabel="Ruptura"
                   chipBg="bg-amber-500/10"
                   chipColor="text-amber-600 dark:text-amber-400"
-                  value={fmtCurrency(8430)}
-                  sub="sem giro há mais de 30 dias"
+                  value={kpis ? `${kpis.outOfStockCount} produto${kpis.outOfStockCount !== 1 ? 's' : ''}` : '—'}
+                  sub="sem estoque — risco de ruptura"
                   icon={TrendingDown}
                   iconColor="text-amber-400"
+                  loading={dashLoading}
                 />
                 <InsightCard
-                  chipLabel="Compras"
+                  chipLabel="Estoque total"
                   chipBg="bg-blue-500/10"
                   chipColor="text-blue-600 dark:text-blue-400"
-                  value="3 pedidos"
-                  sub="no momento ideal para comprar"
+                  value={kpis ? fmtCurrency(kpis.stockValue) : '—'}
+                  sub={kpis ? `em ${kpis.totalProducts} produtos ativos` : 'valor em estoque'}
                   icon={ShoppingCart}
                   iconColor="text-blue-400"
+                  loading={dashLoading}
                 />
                 <InsightCard
                   chipLabel="Vendas"
                   chipBg="bg-green-500/10"
                   chipColor="text-green-600 dark:text-green-400"
-                  value="+14%"
-                  sub="acima da média dos últimos 30 dias"
+                  value={salesGrowth !== null ? fmtPct(salesGrowth) : kpis ? fmtCurrency(kpis.salesRevenue) : '—'}
+                  sub={salesGrowth !== null ? 'vs. mês anterior' : 'receita no mês atual'}
                   icon={TrendingUp}
                   iconColor="text-green-500"
+                  loading={dashLoading}
                 />
               </div>
 
-              {/* Input area – what do you want to know */}
+              {/* Input area */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
                   O que você quer saber?
@@ -597,57 +567,79 @@ export function KyraPage() {
           {/* Normal state → Kyra recomenda + recentes */}
           {!isAnalyzing && (
             <>
-              {/* Kyra recomenda */}
+              {/* Kyra recomenda — powered by real dashboard data */}
               <div className="p-4 border-b border-border">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="h-4 w-4 text-primary" />
                   <p className="text-xs font-semibold uppercase tracking-widest text-primary">Kyra recomenda</p>
                 </div>
-                <div className="space-y-2">
-                  <RecommendationCard
-                    type="danger"
-                    title="7 produtos em risco de ruptura"
-                    sub="Café Gourmet 500g acaba em 2 dias"
-                    action="Criar pedido de compra"
-                  />
-                  <RecommendationCard
-                    type="warning"
-                    title="Estoque parado: R$ 8.430"
-                    sub="Tênis Runner X2 sem giro há 45 dias"
-                    action="Ver produtos parados"
-                  />
-                  <RecommendationCard
-                    type="info"
-                    title="3 compras no momento ideal"
-                    sub="Preços favoráveis nos últimos 7 dias"
-                    action="Ver sugestões"
-                  />
-                  <RecommendationCard
-                    type="success"
-                    title="Vendas +14% vs. mês anterior"
-                    sub="Tênis e acessórios liderando crescimento"
-                  />
-                </div>
+
+                {dashLoading && (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />
+                    ))}
+                  </div>
+                )}
+
+                {!dashLoading && attentionItems.length === 0 && (
+                  <div className="flex flex-col items-center py-6 text-center gap-2">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                    <p className="text-sm font-medium text-muted-foreground">Tudo em ordem!</p>
+                    <p className="text-xs text-muted-foreground">Nenhum ponto de atenção no momento.</p>
+                  </div>
+                )}
+
+                {!dashLoading && attentionItems.length > 0 && (
+                  <div className="space-y-2">
+                    {attentionItems.slice(0, 4).map(item => (
+                      <RecommendationCard
+                        key={item.id}
+                        type={attentionTypeToCard(item.priority)}
+                        title={item.title}
+                        sub={item.description}
+                        action={item.action}
+                        href={item.href}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Conversas recentes */}
+              {/* Conversas recentes — perguntas desta sessão ou sugestões */}
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Conversas recentes</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    {recentMsgs.length > 0 ? 'Nesta conversa' : 'Sugestões'}
+                  </p>
                 </div>
                 <div className="space-y-1">
-                  {RECENT_CONVS.map(c => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => sendMessage(c.preview)}
-                      className="w-full text-left rounded-lg px-3 py-2.5 hover:bg-muted transition-colors group"
-                    >
-                      <p className="text-sm truncate text-foreground group-hover:text-primary transition-colors">{c.preview}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{c.ts}</p>
-                    </button>
-                  ))}
+                  {recentMsgs.length > 0
+                    ? recentMsgs.map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => sendMessage(m.text)}
+                          className="w-full text-left rounded-lg px-3 py-2.5 hover:bg-muted transition-colors group"
+                        >
+                          <p className="text-sm truncate text-foreground group-hover:text-primary transition-colors">{m.text}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {m.ts.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </button>
+                      ))
+                    : SUGGESTIONS.slice(0, 3).map(s => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => sendMessage(s)}
+                          className="w-full text-left rounded-lg px-3 py-2.5 hover:bg-muted transition-colors group"
+                        >
+                          <p className="text-sm truncate text-muted-foreground group-hover:text-foreground transition-colors">{s}</p>
+                        </button>
+                      ))
+                  }
                 </div>
               </div>
             </>

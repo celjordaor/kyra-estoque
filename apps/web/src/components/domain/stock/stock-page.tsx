@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Plus, ArrowDown, ArrowUp, ArrowLeftRight, ClipboardList, Warehouse,
   Package, TrendingDown, AlertTriangle, X, ChevronDown, Info
@@ -84,6 +84,7 @@ export function StockPage() {
   const [summary, setSummary] = React.useState({ totalValue: 0, totalProducts: 0, lowStock: 0, slowMoving: 0 })
   const [loading, setLoading] = React.useState(true)
   const [movLoading, setMovLoading] = React.useState(true)
+  const router = useRouter()
   const [searchParams] = useSearchParams ? [useSearchParams()] : [null]
   const urlFilter = (searchParams?.get('filter') as StockFilter) ?? 'all'
   const [filter, setFilter] = React.useState<StockFilter>(urlFilter)
@@ -307,7 +308,7 @@ export function StockPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <p className="font-semibold">Movimentações recentes</p>
-          <Button variant="ghost" size="sm" className="text-primary">Ver todas</Button>
+          <Button variant="ghost" size="sm" className="text-primary" onClick={() => router.push("/stock/movements")}>Ver todas</Button>
         </div>
         <div className="rounded-xl border border-border overflow-hidden">
           <div className="overflow-x-auto">

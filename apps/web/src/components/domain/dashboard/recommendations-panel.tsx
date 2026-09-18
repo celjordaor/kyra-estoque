@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Sparkles, ChevronRight, CheckCircle2, XCircle, TrendingUp } from 'lucide-react'
 import type { RecommendationItem } from '@/lib/actions/dashboard'
 
@@ -31,6 +32,7 @@ interface RecommendationsPanelProps {
 }
 
 export function RecommendationsPanel({ recommendations }: RecommendationsPanelProps) {
+  const router = useRouter()
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
   const visible = recommendations.filter(r => !dismissed.has(r.id))
@@ -86,7 +88,7 @@ export function RecommendationsPanel({ recommendations }: RecommendationsPanelPr
                 )}
               </div>
 
-              <button className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg py-2 transition-colors">
+              <button onClick={() => router.push(`/kyra?q=${encodeURIComponent(rec.title + ': ' + rec.description)}`)} className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg py-2 transition-colors">
                 Executar com Kyra
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>

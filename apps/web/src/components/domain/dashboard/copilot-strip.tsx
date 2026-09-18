@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Sparkles, Send, Loader2, ArrowRight, RotateCcw } from 'lucide-react'
 
 const QUICK_PROMPTS = [
@@ -12,70 +13,32 @@ const QUICK_PROMPTS = [
   'Onde estou perdendo margem?',
 ]
 
-// Respostas mock por pergunta — serão substituídas pela IA real
-const MOCK_RESPONSES: Record<string, { summary: string; detail: string; primaryAction: string; primaryHref: string }> = {
-  'O que devo comprar?': {
-    summary: 'Encontrei <strong>3 produtos</strong> com necessidade de reposição imediata.',
-    detail: 'Camiseta Básica, Calça Slim e Shorts Cargo precisam de pedido nos próximos 2 dias.',
-    primaryAction: 'Ver análise',
-    primaryHref: '/stock?filter=low',
-  },
-  'O que está encalhado?': {
-    summary: 'Há <strong>R$ 8.430</strong> em estoque parado há mais de 30 dias.',
-    detail: 'Produtos com zero saída: Blazer Xadrez, Vestido Longo e 4 outros itens.',
-    primaryAction: 'Ver produtos',
-    primaryHref: '/stock?filter=slow',
-  },
-  'Como foram minhas vendas?': {
-    summary: 'Vendas cresceram <strong>14%</strong> em relação ao mês anterior.',
-    detail: '68% do crescimento veio de calçados. Desconto médio subiu 3 pontos.',
-    primaryAction: 'Ver vendas',
-    primaryHref: '/sales',
-  },
-  'Quais produtos estão dando prejuízo?': {
-    summary: '<strong>2 produtos</strong> estão sendo vendidos abaixo do custo.',
-    detail: 'Margem negativa em Tênis Runner (-4%) e Bolsa Couro (-2,1%).',
-    primaryAction: 'Analisar margem',
-    primaryHref: '/stock',
-  },
-  'Quanto tenho em estoque?': {
-    summary: 'Estoque atual vale <strong>R$ 84.230</strong> em 324 produtos.',
-    detail: '12 itens sem estoque e 8 com estoque abaixo do mínimo.',
-    primaryAction: 'Ver estoque',
-    primaryHref: '/stock',
-  },
-  'Onde estou perdendo margem?': {
-    summary: 'Margem caiu <strong>2,1 pontos</strong> neste mês.',
-    detail: 'Principal causa: desconto médio aumentou em Calçados (+5%) e Acessórios (+3%).',
-    primaryAction: 'Ver detalhes',
-    primaryHref: '/sales',
-  },
+// Mapa de prompt rápido → rota de ação primária
+const PROMPT_ACTION_MAP: Record<string, { action: string; href: string }> = {
+  'O que devo comprar?':            { action: 'Ver análise', href: '/stock?filter=low' },
+  'O que está encalhado?':          { action: 'Ver produtos', href: '/stock?filter=slow' },
+  'Como foram minhas vendas?':      { action: 'Ver vendas', href: '/sales' },
+  'Quais produtos estão dando prejuízo?': { action: 'Analisar margem', href: '/stock' },
+  'Quanto tenho em estoque?':       { action: 'Ver estoque', href: '/stock' },
+  'Onde estou perdendo margem?':    { action: 'Ver detalhes', href: '/sales' },
 }
 
-function getResponse(text: string) {
-  const exact = MOCK_RESPONSES[text]
-  if (exact) return exact
-  return {
-    summary: 'Analisei sua operação com base nos dados disponíveis.',
-    detail: 'Integração completa com IA estará disponível em breve para respostas personalizadas.',
-    primaryAction: 'Ver dashboard',
-    primaryHref: '/dashboard',
-  }
-}
+const DEFAULT_ACTION = { action: 'Ver dashboard', href: '/dashboard' }
 
 interface InlineResponse {
   question: string
   summary: string
-  detail: string
   primaryAction: string
   primaryHref: string
 }
 
 export function CopilotStrip() {
+  const router = useRouter()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [response, setResponse] = useState<InlineResponse | null>(null)
   const [activePrompt, setActivePrompt] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function handleSend(text: string) {
@@ -83,21 +46,58 @@ export function CopilotStrip() {
     if (!q || loading) return
     setActivePrompt(q)
     setResponse(null)
+    setError(null)
     setLoading(true)
     setInput('')
 
-    // Simula latência de IA — será substituído por chamada real
-    await new Promise(r => setTimeout(r, 1100))
+    try {
+      const res = await fetch('/api/kyra/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: q }],
+        }),
+      })
 
-    const res = getResponse(q)
-    setResponse({ question: q, ...res })
-    setLoading(false)
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}))
+        const limit = data?.limit ?? 'seu limite'
+        setError(`Limite de ${limit} mensagens atingido. Tente novamente mais tarde.`)
+        setLoading(false)
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(`Erro ${res.status}`)
+      }
+
+      const data = await res.json()
+      // A API retorna { content: string } ou { message: { content: string } }
+      const summary: string =
+        data?.content ??
+        data?.message?.content ??
+        'Não consegui obter uma resposta. Tente novamente.'
+
+      const mapped = PROMPT_ACTION_MAP[q] ?? DEFAULT_ACTION
+
+      setResponse({
+        question: q,
+        summary,
+        primaryAction: mapped.action,
+        primaryHref: mapped.href,
+      })
+    } catch {
+      setError('Não foi possível conectar ao Kyra. Verifique sua conexão e tente novamente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleReset() {
     setResponse(null)
     setActivePrompt(null)
     setInput('')
+    setError(null)
     setTimeout(() => inputRef.current?.focus(), 50)
   }
 
@@ -160,18 +160,30 @@ export function CopilotStrip() {
         </div>
       )}
 
+      {/* Error state */}
+      {error && !loading && (
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3">
+          <p className="text-xs text-red-600">{error}</p>
+          <button
+            onClick={handleReset}
+            className="mt-2 text-xs font-semibold text-red-500 hover:text-red-700 flex items-center gap-1"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
       {/* Inline response */}
-      {response && !loading && (
+      {response && !loading && !error && (
         <div className="mt-4">
           <p className="text-xs text-slate-400 mb-2">
             Você perguntou: <span className="font-semibold text-slate-600">{response.question}</span>
           </p>
           <div className="rounded-xl border border-teal-100 bg-teal-50/60 p-4">
-            <p
-              className="text-sm font-semibold text-slate-800 mb-1 leading-snug"
-              dangerouslySetInnerHTML={{ __html: response.summary }}
-            />
-            <p className="text-xs text-slate-500 mb-3 leading-relaxed">{response.detail}</p>
+            <p className="text-sm font-semibold text-slate-800 mb-3 leading-snug whitespace-pre-line">
+              {response.summary}
+            </p>
             <div className="flex items-center gap-2 flex-wrap">
               <a
                 href={response.primaryHref}
@@ -186,6 +198,13 @@ export function CopilotStrip() {
               >
                 <RotateCcw className="h-3 w-3" />
                 Nova pergunta
+              </button>
+              <button
+                onClick={() => router.push(`/kyra?q=${encodeURIComponent(response.question)}`)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-semibold transition-colors"
+              >
+                Continuar no Kyra
+                <ArrowRight className="h-3 w-3" />
               </button>
             </div>
           </div>
