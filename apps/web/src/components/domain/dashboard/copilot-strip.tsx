@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, Send, Loader2, ArrowRight, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 
 const QUICK_PROMPTS = [
   'O que devo comprar?',
