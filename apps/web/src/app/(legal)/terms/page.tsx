@@ -13,8 +13,8 @@ const CONTACT_EMAIL = 'contato@kyraestoque.com.br'
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="text-xl font-bold text-slate-900 mb-3 tracking-tight">{title}</h2>
-      <div className="space-y-3 text-slate-600 text-sm leading-relaxed">{children}</div>
+      <h2 className="text-xl font-bold text-foreground mb-3 tracking-tight">{title}</h2>
+      <div className="space-y-3 text-muted-foreground text-sm leading-relaxed">{children}</div>
     </section>
   )
 }
@@ -22,8 +22,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Sub({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="font-semibold text-slate-800 mb-1">{title}</h3>
-      <div className="text-slate-600 text-sm leading-relaxed">{children}</div>
+      <h3 className="font-semibold text-foreground mb-1">{title}</h3>
+      <div className="text-muted-foreground text-sm leading-relaxed">{children}</div>
     </div>
   )
 }
@@ -31,16 +31,16 @@ function Sub({ title, children }: { title: string; children: React.ReactNode }) 
 export default function TermsPage() {
   return (
     <>
-      <header className="mb-10 pb-8 border-b border-slate-200">
-        <p className="text-xs font-semibold uppercase tracking-widest text-teal-600 mb-2">Legal</p>
-        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">Termos de Uso</h1>
-        <p className="text-slate-500 text-sm">
+      <header className="mb-10 pb-8 border-b border-border">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">Legal</p>
+        <h1 className="text-4xl font-extrabold text-foreground tracking-tight mb-3">Termos de Uso</h1>
+        <p className="text-muted-foreground text-sm">
           Última atualização: <strong>{LAST_UPDATED}</strong>
         </p>
       </header>
 
       <div className="prose-sm max-w-none">
-        <p className="text-slate-600 text-sm leading-relaxed mb-8">
+        <p className="text-muted-foreground text-sm leading-relaxed mb-8">
           Ao acessar ou utilizar a plataforma <strong>Kyra Estoque</strong>, operada por{' '}
           <strong>{COMPANY_NAME}</strong> (CNPJ {COMPANY_CNPJ}), você concorda com estes Termos de
           Uso. Leia-os com atenção antes de utilizar os serviços. Caso não concorde, não utilize a
@@ -66,7 +66,7 @@ export default function TermsPage() {
         <Section title="2. Aceitação dos Termos">
           <p>
             O acesso e uso da Plataforma constituem aceitação integral destes Termos, da nossa{' '}
-            <a href="/privacy" className="text-teal-600 hover:underline">Política de Privacidade</a> e
+            <a href="/privacy" className="text-primary hover:underline">Política de Privacidade</a> e
             de quaisquer políticas complementares publicadas. Os Termos aplicam-se a todos os Usuários,
             incluindo visitantes, empresas cadastradas e administradores.
           </p>
@@ -102,7 +102,7 @@ export default function TermsPage() {
             <p>
               Em caso de suspeita de comprometimento de credenciais, o Usuário deve notificar
               imediatamente a Kyra pelo e-mail{' '}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-teal-600 hover:underline">{CONTACT_EMAIL}</a>{' '}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>{' '}
               e alterar a senha sem demora.
             </p>
           </Sub>
@@ -183,7 +183,7 @@ export default function TermsPage() {
         <Section title="7. Proteção de Dados e LGPD">
           <p>
             O tratamento de dados pessoais pela Kyra está descrito na{' '}
-            <a href="/privacy" className="text-teal-600 hover:underline">Política de Privacidade</a>,
+            <a href="/privacy" className="text-primary hover:underline">Política de Privacidade</a>,
             em conformidade com a Lei Geral de Proteção de Dados (Lei 13.709/2018 — LGPD). A Empresa,
             na condição de controladora dos dados de seus clientes e funcionários inseridos na
             Plataforma, é responsável por garantir que tais tratamentos possuam base legal adequada.
@@ -279,7 +279,7 @@ export default function TermsPage() {
             <p>CNPJ: {COMPANY_CNPJ}</p>
             <p>
               E-mail:{' '}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-teal-600 hover:underline">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">
                 {CONTACT_EMAIL}
               </a>
             </p>

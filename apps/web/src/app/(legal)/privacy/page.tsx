@@ -15,8 +15,8 @@ const COMPANY_ADDRESS = '[Endereço completo da empresa]'
 function Section({ title, id, children }: { title: string; id: string; children: React.ReactNode }) {
   return (
     <section id={id} className="mb-10">
-      <h2 className="text-xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">{title}</h2>
-      <div className="space-y-3 text-slate-600 leading-relaxed text-[15px]">{children}</div>
+      <h2 className="text-xl font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+      <div className="space-y-3 text-muted-foreground leading-relaxed text-[15px]">{children}</div>
     </section>
   )
 }
@@ -24,7 +24,7 @@ function Section({ title, id, children }: { title: string; id: string; children:
 function Sub({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-4">
-      <h3 className="font-semibold text-slate-800 mb-1.5">{title}</h3>
+      <h3 className="font-semibold text-foreground mb-1.5">{title}</h3>
       <div className="space-y-2">{children}</div>
     </div>
   )
@@ -33,7 +33,7 @@ function Sub({ title, children }: { title: string; children: React.ReactNode }) 
 function Li({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2">
-      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
+      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
       <span>{children}</span>
     </li>
   )
@@ -41,21 +41,21 @@ function Li({ children }: { children: React.ReactNode }) {
 
 function Table({ rows }: { rows: [string, string, string][] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 mt-3">
+    <div className="overflow-x-auto rounded-xl border border-border mt-3">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="px-4 py-3 text-left font-semibold text-slate-700">Dado / Categoria</th>
-            <th className="px-4 py-3 text-left font-semibold text-slate-700">Finalidade</th>
-            <th className="px-4 py-3 text-left font-semibold text-slate-700">Base Legal (LGPD)</th>
+          <tr className="bg-muted/50 border-b border-border">
+            <th className="px-4 py-3 text-left font-semibold text-foreground">Dado / Categoria</th>
+            <th className="px-4 py-3 text-left font-semibold text-foreground">Finalidade</th>
+            <th className="px-4 py-3 text-left font-semibold text-foreground">Base Legal (LGPD)</th>
           </tr>
         </thead>
         <tbody>
           {rows.map(([dado, finalidade, base], i) => (
-            <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
-              <td className="px-4 py-3 text-slate-700 font-medium">{dado}</td>
-              <td className="px-4 py-3 text-slate-600">{finalidade}</td>
-              <td className="px-4 py-3 text-slate-500 text-xs">{base}</td>
+            <tr key={i} className="border-b border-border last:border-0 hover:bg-muted/50/50">
+              <td className="px-4 py-3 text-foreground font-medium">{dado}</td>
+              <td className="px-4 py-3 text-muted-foreground">{finalidade}</td>
+              <td className="px-4 py-3 text-muted-foreground text-xs">{base}</td>
             </tr>
           ))}
         </tbody>
@@ -69,21 +69,21 @@ export default function PrivacyPage() {
     <>
       {/* Header do documento */}
       <div className="mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-xs font-semibold mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
           LGPD — Lei 13.709/2018
         </div>
-        <h1 className="text-3xl font-bold text-slate-900 mb-3">Política de Privacidade</h1>
-        <p className="text-slate-500 text-sm">Última atualização: {LAST_UPDATED}</p>
-        <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
+        <h1 className="text-3xl font-bold text-foreground mb-3">Política de Privacidade</h1>
+        <p className="text-muted-foreground text-sm">Última atualização: {LAST_UPDATED}</p>
+        <div className="mt-4 p-4 rounded-xl bg-muted/50 border border-border text-sm text-muted-foreground">
           Esta Política descreve como o <strong>Kyra Estoque</strong> coleta, usa, armazena e compartilha seus dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018) e demais normas aplicáveis.
         </div>
       </div>
 
       {/* Índice */}
-      <nav className="mb-10 p-5 rounded-xl border border-slate-200 bg-slate-50">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Índice</p>
-        <ol className="space-y-1 text-sm text-teal-700">
+      <nav className="mb-10 p-5 rounded-xl border border-border bg-muted/50">
+        <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">Índice</p>
+        <ol className="space-y-1 text-sm text-primary">
           {[
             ['#controlador', '1. Controlador e Encarregado (DPO)'],
             ['#dados', '2. Dados Coletados e Finalidades'],
@@ -110,10 +110,10 @@ export default function PrivacyPage() {
           O <strong>Encarregado pelo Tratamento de Dados Pessoais (DPO)</strong> é o responsável por atender
           solicitações dos titulares e comunicar-se com a Autoridade Nacional de Proteção de Dados (ANPD).
         </p>
-        <div className="p-4 rounded-xl border border-teal-200 bg-teal-50 text-sm">
-          <p className="font-semibold text-teal-800 mb-1">Contato do Encarregado (DPO)</p>
-          <p className="text-teal-700">E-mail: <a href={`mailto:${DPO_EMAIL}`} className="underline">{DPO_EMAIL}</a></p>
-          <p className="text-teal-700 text-xs mt-1">Respondemos em até 15 dias úteis, conforme prazo legal.</p>
+        <div className="p-4 rounded-xl border border-primary/20 bg-primary/10 text-sm">
+          <p className="font-semibold text-primary mb-1">Contato do Encarregado (DPO)</p>
+          <p className="text-primary">E-mail: <a href={`mailto:${DPO_EMAIL}`} className="underline">{DPO_EMAIL}</a></p>
+          <p className="text-primary text-xs mt-1">Respondemos em até 15 dias úteis, conforme prazo legal.</p>
         </div>
       </Section>
 
@@ -158,7 +158,7 @@ export default function PrivacyPage() {
           ]} />
         </Sub>
 
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Os cookies essenciais não podem ser desativados, pois são necessários para o funcionamento do sistema.
           Os demais são opcionais e requerem seu consentimento expresso, que pode ser retirado a qualquer momento.
         </p>
@@ -189,7 +189,7 @@ export default function PrivacyPage() {
           ['Dados de formulários de contato', 'Até 2 anos ou até revogação do consentimento', 'Art. 7º, I'],
           ['Backups', 'Eliminados no mesmo prazo, com ciclo de retenção de 30 dias', '—'],
         ]} />
-        <p className="text-sm text-slate-500 mt-3">
+        <p className="text-sm text-muted-foreground mt-3">
           Após o prazo de retenção, os dados são eliminados de forma segura ou anonimizados de modo que não possam
           ser revertidos para identificar o titular.
         </p>
@@ -223,10 +223,10 @@ export default function PrivacyPage() {
           <Li><strong>Oposição:</strong> se opor a tratamentos realizados com base em legítimo interesse</Li>
           <Li><strong>Reclamação à ANPD:</strong> registrar reclamação junto à Autoridade Nacional de Proteção de Dados</Li>
         </ul>
-        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-sm mt-3">
-          <p className="font-semibold text-slate-800 mb-1">Como exercer seus direitos</p>
-          <p>Envie um e-mail para <a href={`mailto:${DPO_EMAIL}`} className="text-teal-600 underline">{DPO_EMAIL}</a> com seu nome completo, e-mail cadastrado e a solicitação desejada. Responderemos em até <strong>15 dias úteis</strong>.</p>
-          <p className="text-slate-500 mt-1">Podemos solicitar confirmação de identidade antes de processar a solicitação.</p>
+        <div className="p-4 rounded-xl border border-border bg-muted/50 text-sm mt-3">
+          <p className="font-semibold text-foreground mb-1">Como exercer seus direitos</p>
+          <p>Envie um e-mail para <a href={`mailto:${DPO_EMAIL}`} className="text-primary underline">{DPO_EMAIL}</a> com seu nome completo, e-mail cadastrado e a solicitação desejada. Responderemos em até <strong>15 dias úteis</strong>.</p>
+          <p className="text-muted-foreground mt-1">Podemos solicitar confirmação de identidade antes de processar a solicitação.</p>
         </div>
       </Section>
 
@@ -252,20 +252,20 @@ export default function PrivacyPage() {
 
       <Section id="contato" title="10. Contato">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-            <p className="font-semibold text-slate-800 mb-2">Encarregado (DPO)</p>
-            <p className="text-sm text-slate-600">E-mail: <a href={`mailto:${DPO_EMAIL}`} className="text-teal-600 underline">{DPO_EMAIL}</a></p>
-            <p className="text-sm text-slate-500 mt-1">Prazo de resposta: até 15 dias úteis</p>
+          <div className="p-4 rounded-xl border border-border bg-muted/50">
+            <p className="font-semibold text-foreground mb-2">Encarregado (DPO)</p>
+            <p className="text-sm text-muted-foreground">E-mail: <a href={`mailto:${DPO_EMAIL}`} className="text-primary underline">{DPO_EMAIL}</a></p>
+            <p className="text-sm text-muted-foreground mt-1">Prazo de resposta: até 15 dias úteis</p>
           </div>
-          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-            <p className="font-semibold text-slate-800 mb-2">Suporte geral</p>
-            <p className="text-sm text-slate-600">E-mail: <a href="mailto:contato@kyraestoque.com.br" className="text-teal-600 underline">contato@kyraestoque.com.br</a></p>
-            <p className="text-sm text-slate-500 mt-1">{COMPANY_NAME} — CNPJ {COMPANY_CNPJ}</p>
+          <div className="p-4 rounded-xl border border-border bg-muted/50">
+            <p className="font-semibold text-foreground mb-2">Suporte geral</p>
+            <p className="text-sm text-muted-foreground">E-mail: <a href="mailto:contato@kyraestoque.com.br" className="text-primary underline">contato@kyraestoque.com.br</a></p>
+            <p className="text-sm text-muted-foreground mt-1">{COMPANY_NAME} — CNPJ {COMPANY_CNPJ}</p>
           </div>
         </div>
-        <p className="text-sm text-slate-500 mt-4">
+        <p className="text-sm text-muted-foreground mt-4">
           Você também pode registrar reclamação diretamente na{' '}
-          <a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer" className="text-teal-600 underline">
+          <a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer" className="text-primary underline">
             Autoridade Nacional de Proteção de Dados (ANPD)
           </a>.
         </p>

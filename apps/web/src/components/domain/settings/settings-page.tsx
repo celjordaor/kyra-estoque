@@ -64,7 +64,7 @@ const OVERVIEW_CARDS: { id: Section; label: string; description: string; icon: R
 
 // ── Plan config ────────────────────────────────────────────────
 const PLAN_CONFIG: Record<string, { icon: React.ElementType; color: string }> = {
-  starter:      { icon: Star,   color: 'text-slate-500' },
+  starter:      { icon: Star,   color: 'text-muted-foreground' },
   professional: { icon: Zap,    color: 'text-blue-500' },
   enterprise:   { icon: Crown,  color: 'text-amber-500' },
 }
@@ -1962,7 +1962,7 @@ const INTEGRATION_DEFS = [
     label: 'Shopify',
     description: 'Sincronize produtos e pedidos da sua loja Shopify',
     icon: ShoppingBag,
-    color: 'text-teal-500',
+    color: 'text-primary',
     fields: [
       { key: 'store_url', label: 'URL da loja', placeholder: 'minha-loja.myshopify.com', secret: false },
       { key: 'api_key', label: 'API Key', placeholder: 'shpat_xxxx', secret: true },

@@ -82,7 +82,7 @@ const TRIGGERS: TriggerOption[] = [
     label: 'Produto parado sem vendas',
     description: 'Quando um produto ficar 30+ dias sem nenhuma venda registrada',
     icon: TrendingDown,
-    color: 'text-slate-500 bg-slate-100 dark:bg-slate-800/40',
+    color: 'text-muted-foreground bg-muted dark:bg-slate-800/40',
   },
   {
     value: 'delayed_purchase',

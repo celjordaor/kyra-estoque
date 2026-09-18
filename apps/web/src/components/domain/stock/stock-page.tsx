@@ -63,7 +63,7 @@ const MOV_CONFIG: Record<string, { label: string; icon: React.ElementType; color
   AJUSTE: { label: 'Ajuste', icon: ArrowLeftRight, color: 'text-blue-500' },
   INVENTARIO: { label: 'Inventário', icon: ClipboardList, color: 'text-purple-500' },
   TRANSFERENCIA: { label: 'Transferência', icon: ArrowLeftRight, color: 'text-orange-500' },
-  DEVOLUCAO: { label: 'Devolução', icon: ArrowDown, color: 'text-teal-600' },
+  DEVOLUCAO: { label: 'Devolução', icon: ArrowDown, color: 'text-primary' },
 }
 
 // ── KPI Card ───────────────────────────────────────────────────
@@ -198,7 +198,7 @@ export function StockPage() {
             {summary.slowMoving > 0 && (
               <KyraAttentionItem
                 icon={TrendingDown}
-                iconColor="bg-slate-400"
+                iconColor="bg-muted-foreground/60"
                 title={`${summary.slowMoving} produto${summary.slowMoving > 1 ? 's' : ''} sem movimentação`}
                 sub="Nenhuma venda registrada — considere promoção"
                 action="Ver produtos"

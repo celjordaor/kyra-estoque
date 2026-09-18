@@ -129,7 +129,7 @@ export function UpdatePasswordForm() {
 
   if (done) {
     return (
-      <div className="rounded-lg bg-teal-50 border border-teal-200 px-4 py-3 text-sm text-teal-800">
+      <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-primary">
         Senha criada com sucesso! Redirecionando para o painel…
       </div>
     )

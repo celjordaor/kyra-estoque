@@ -134,7 +134,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       )}
     >
       <span className={cn(
-        'inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform',
+        'inline-block h-4 w-4 transform rounded-full bg-card shadow-sm transition-transform',
         checked ? 'translate-x-4' : 'translate-x-0.5'
       )} />
     </button>
@@ -878,10 +878,10 @@ export function ChannelsPage() {
       {/* Insights */}
       {channels.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 p-4">
+          <div className="rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/10 dark:bg-primary/5 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-              <span className="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400">Insight do Kyra</span>
+              <Zap className="h-4 w-4 text-primary dark:text-primary/80" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-primary dark:text-primary/80">Insight do Kyra</span>
             </div>
             <p className="text-sm font-medium mb-1">Sincronize regularmente</p>
             <p className="text-xs text-muted-foreground">Mantenha seu estoque atualizado em todos os canais para evitar vendas de produtos indisponíveis.</p>

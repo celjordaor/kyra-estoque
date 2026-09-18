@@ -52,7 +52,7 @@ const TRIGGER_CATALOGUE: TriggerMeta[] = [
     description: 'Identifica produtos sem movimentação por 30+ dias.',
     detail: 'Produtos parados representam capital imobilizado. A Kyra detecta itens sem saída e sugere ações como promoção ou revisão de preço.',
     icon: TrendingDown,
-    color: 'bg-slate-500',
+    color: 'bg-muted-foreground',
     triggerLabel: 'Produto sem saída por 30+ dias',
   },
   {
