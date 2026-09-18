@@ -9,14 +9,16 @@ import { createAdminSupabaseClient } from '@kyra/database'
 
 const CLIENT_SECRET = process.env.MERCADOLIVRE_CLIENT_SECRET ?? ''
 
-function verifyMLSignature(rawBody: string, xSignature: string, xRequestId: string): boolean {
+function verifyMLSignature(notificationId: string, xSignature: string, xRequestId: string): boolean {
   if (!CLIENT_SECRET) return false
   // Formato do manifesto: ts={ts};v1={hash}
   const parts = Object.fromEntries(xSignature.split(',').map(p => p.split('=')))
   const ts = parts['ts']
   const v1 = parts['v1']
   if (!ts || !v1) return false
-  const message = `id:${xRequestId};request-id:${xRequestId};ts:${ts};`
+  // ML v2: id = notification id from body; request-id = x-request-id header
+  // Docs: https://developers.mercadolivre.com.br/pt_br/notificacoes-e-webhooks
+  const message = `id:${notificationId};request-id:${xRequestId};ts:${ts};`
   const digest = createHmac('sha256', CLIENT_SECRET).update(message).digest('hex')
   try {
     return timingSafeEqual(Buffer.from(digest), Buffer.from(v1))
@@ -30,14 +32,17 @@ export async function POST(req: NextRequest) {
   const xSignature = req.headers.get('x-signature') ?? ''
   const xRequestId = req.headers.get('x-request-id') ?? ''
 
-  if (CLIENT_SECRET && !verifyMLSignature(rawBody, xSignature, xRequestId)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+  // Parse body first to extract notification id for HMAC verification
   const payload = JSON.parse(rawBody) as {
+    id?: number
     topic?: string
     resource?: string
     user_id?: number
+  }
+  const notificationId = String(payload.id ?? '')
+
+  if (CLIENT_SECRET && !verifyMLSignature(notificationId, xSignature, xRequestId)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { topic, resource, user_id } = payload
