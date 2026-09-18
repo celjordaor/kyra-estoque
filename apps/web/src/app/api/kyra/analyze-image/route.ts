@@ -73,8 +73,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Formato de imagem inválido' }, { status: 400 })
     }
 
-    const mediaType = match[1] as AllowedMediaType
-    const base64Data = match[2]
+    const mediaType = (match[1] ?? '') as AllowedMediaType
+    const base64Data = match[2] ?? ''
 
     if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) {
       return NextResponse.json(
