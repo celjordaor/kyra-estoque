@@ -52,7 +52,7 @@ function KPICard({ label, value, sub, change, changeSuffix = '%', icon: Icon, ic
       {hasChange && (
         <div className={cn(
           'flex items-center gap-1 text-xs font-semibold',
-          isUp ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+          isUp ? 'text-success' : 'text-danger'
         )}>
           {isUp
             ? <TrendingUp className="h-3.5 w-3.5" />
@@ -101,8 +101,8 @@ export function KPIRow({ kpis }: KPIRowProps) {
         change={marginDiff}
         changeSuffix=" pp"
         icon={BarChart2}
-        iconBg={kpis.grossMargin >= 30 ? 'bg-green-500/10' : 'bg-amber-500/10'}
-        iconColor={kpis.grossMargin >= 30 ? 'text-green-600' : 'text-amber-500'}
+        iconBg={kpis.grossMargin >= 30 ? 'bg-success/10' : 'bg-warning/10'}
+        iconColor={kpis.grossMargin >= 30 ? 'text-success' : 'text-warning'}
       />
 
       {/* Estoque */}
@@ -112,8 +112,8 @@ export function KPIRow({ kpis }: KPIRowProps) {
         sub={`${kpis.totalProducts} produtos ativos`}
         change={kpis.outOfStockCount > 0 ? null : undefined}
         icon={Package}
-        iconBg={kpis.outOfStockCount > 0 ? 'bg-red-500/10' : 'bg-blue-500/10'}
-        iconColor={kpis.outOfStockCount > 0 ? 'text-red-500' : 'text-blue-500'}
+        iconBg={kpis.outOfStockCount > 0 ? 'bg-danger/10' : 'bg-info/10'}
+        iconColor={kpis.outOfStockCount > 0 ? 'text-danger' : 'text-info'}
       />
 
       {/* Ticket Médio */}
@@ -123,8 +123,8 @@ export function KPIRow({ kpis }: KPIRowProps) {
         sub="Valor médio por venda"
         change={ticketChange}
         icon={DollarSign}
-        iconBg="bg-green-500/10"
-        iconColor="text-green-600"
+        iconBg="bg-success/10"
+        iconColor="text-success"
       />
     </div>
   )

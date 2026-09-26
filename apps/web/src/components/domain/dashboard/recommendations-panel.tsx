@@ -18,7 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 function ConfidenceDot({ value }: { value: number }) {
   const pct = Math.round(value * 100)
-  const color = pct >= 85 ? 'bg-emerald-400' : pct >= 70 ? 'bg-amber-400' : 'bg-muted-foreground/40'
+  const color = pct >= 85 ? 'bg-success' : pct >= 70 ? 'bg-warning' : 'bg-muted-foreground/40'
   return (
     <div className="flex items-center gap-1.5">
       <div className={`w-2 h-2 rounded-full ${color}`} />
@@ -52,7 +52,7 @@ export function RecommendationsPanel({ recommendations }: RecommendationsPanelPr
 
       {visible.length === 0 ? (
         <div className="flex flex-col items-center py-8 text-center gap-2">
-          <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+          <CheckCircle2 className="h-8 w-8 text-success" />
           <p className="text-sm font-medium text-foreground">Tudo analisado</p>
           <p className="text-xs text-muted-foreground">Novas recomendações aparecem automaticamente.</p>
         </div>

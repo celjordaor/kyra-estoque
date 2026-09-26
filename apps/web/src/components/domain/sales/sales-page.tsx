@@ -22,10 +22,10 @@ const fmtDate = (d: string) =>
 const fmtDateShort = (d: string) => new Date(d).toLocaleDateString('pt-BR')
 
 const STATUS_CONFIG: Record<SaleStatus, { label: string; color: string }> = {
-  PENDING:   { label: 'Pendente',  color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  COMPLETED: { label: 'Concluída', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  PENDING:   { label: 'Pendente',  color: 'bg-warning/10 text-warning dark:bg-warning/20 dark:text-warning' },
+  COMPLETED: { label: 'Concluída', color: 'bg-success/10 text-success dark:bg-success/20 dark:text-success' },
   CANCELLED: { label: 'Cancelada', color: 'bg-muted text-muted-foreground' },
-  REFUNDED:  { label: 'Devolvida', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  REFUNDED:  { label: 'Devolvida', color: 'bg-danger/10 text-danger dark:bg-danger/20 dark:text-danger' },
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -84,8 +84,8 @@ function RefundConfirm({
           <X className="h-4 w-4" />
         </button>
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-            <RotateCcw className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-danger/10">
+            <RotateCcw className="h-5 w-5 text-danger" />
           </div>
           <div>
             <p className="font-semibold">Confirmar devolução</p>
@@ -152,11 +152,11 @@ function SaleDetailSheet({
   const nfe = sale.nfe_emission
 
   const nfeBadgeColor: Record<string, string> = {
-    authorized:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    authorized:  'bg-success/10 text-success dark:bg-success/20 dark:text-success',
     processing:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
     pending:     'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    rejected:    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    cancelled:   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    rejected:    'bg-danger/10 text-danger dark:bg-danger/20 dark:text-danger',
+    cancelled:   'bg-danger/10 text-danger dark:bg-danger/20 dark:text-danger',
   }
   const nfeLabel: Record<string, string> = {
     authorized: 'NF-e Autorizada',
@@ -223,8 +223,8 @@ function SaleDetailSheet({
                         {item.margin != null && (
                           <p className={cn(
                             'text-xs',
-                            item.margin >= 20 ? 'text-emerald-600 dark:text-emerald-400' :
-                            item.margin < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+                            item.margin >= 20 ? 'text-success' :
+                            item.margin < 0 ? 'text-danger' : 'text-muted-foreground'
                           )}>
                             {item.margin.toFixed(1)}% mg
                           </p>
@@ -255,8 +255,8 @@ function SaleDetailSheet({
                 <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border">
                   <span>Margem</span>
                   <span className={cn(
-                    sale.margin >= 20 ? 'text-emerald-600 dark:text-emerald-400' :
-                    sale.margin < 0 ? 'text-red-600 dark:text-red-400' : ''
+                    sale.margin >= 20 ? 'text-success' :
+                    sale.margin < 0 ? 'text-danger' : ''
                   )}>
                     {sale.margin.toFixed(1)}%
                   </span>
@@ -274,7 +274,7 @@ function SaleDetailSheet({
 
             {/* Refunded notice */}
             {sale.status === 'REFUNDED' && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
+              <div className="rounded-lg bg-danger/5 border border-danger/20 p-3 text-xs text-danger flex items-start gap-2">
                 <RotateCcw className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span>Esta venda foi devolvida. O estoque foi restituído automaticamente.</span>
               </div>
@@ -500,7 +500,7 @@ export function SalesPage() {
                     <td className="px-4 py-3 text-right font-semibold">{brl(sale.total_amount)}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell">
                       {sale.margin != null ? (
-                        <span className={cn('font-medium', sale.margin >= 20 ? 'text-emerald-600 dark:text-emerald-400' : sale.margin < 0 ? 'text-red-600 dark:text-red-400' : '')}>
+                        <span className={cn('font-medium', sale.margin >= 20 ? 'text-success' : sale.margin < 0 ? 'text-danger' : '')}>
                           {sale.margin.toFixed(1)}%
                         </span>
                       ) : '—'}
@@ -526,7 +526,7 @@ export function SalesPage() {
                           <button
                             type="button"
                             title="Devolver venda"
-                            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+                            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-danger/10 hover:text-danger transition-colors"
                             onClick={() => openDetail(sale.id)}
                           >
                             <RotateCcw className="h-4 w-4" />

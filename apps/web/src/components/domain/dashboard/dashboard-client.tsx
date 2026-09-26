@@ -138,9 +138,9 @@ export function DashboardClient({ initialData, initialError, userName, companyId
 
           {/* Partial error banner */}
           {error && data && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-center justify-between">
-              <p className="text-xs text-amber-700">Alguns dados podem estar desatualizados.</p>
-              <button onClick={handleRetry} className="text-xs font-semibold text-amber-700 hover:underline">
+            <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 flex items-center justify-between">
+              <p className="text-xs text-warning">Alguns dados podem estar desatualizados.</p>
+              <button onClick={handleRetry} className="text-xs font-semibold text-warning hover:underline">
                 Tentar novamente
               </button>
             </div>

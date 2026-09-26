@@ -92,8 +92,8 @@ interface ErrorStateProps {
 export function DashboardErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-      <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mb-2">
-        <AlertCircle className="h-8 w-8 text-red-400" />
+      <div className="w-16 h-16 rounded-2xl bg-danger/5 border border-danger/20 flex items-center justify-center mb-2">
+        <AlertCircle className="h-8 w-8 text-danger" />
       </div>
       <div>
         <h2 className="text-lg font-bold text-foreground mb-1">

@@ -164,11 +164,11 @@ export function CopilotStrip() {
 
       {/* Error state */}
       {error && !loading && (
-        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3">
-          <p className="text-xs text-red-600">{error}</p>
+        <div className="mt-4 rounded-xl border border-danger/20 bg-danger/5 p-3">
+          <p className="text-xs text-danger">{error}</p>
           <button
             onClick={handleReset}
-            className="mt-2 text-xs font-semibold text-red-500 hover:text-red-700 flex items-center gap-1"
+            className="mt-2 text-xs font-semibold text-danger hover:text-danger flex items-center gap-1"
           >
             <RotateCcw className="h-3 w-3" />
             Tentar novamente

@@ -55,9 +55,9 @@ function KpiCard({
 }) {
   const colors = {
     default: 'text-foreground',
-    green: 'text-emerald-600 dark:text-emerald-400',
-    red: 'text-red-600 dark:text-red-400',
-    yellow: 'text-yellow-600 dark:text-yellow-400',
+    green: 'text-success',
+    red: 'text-danger',
+    yellow: 'text-warning',
   }
   return (
     <div className="rounded-lg border bg-card p-4 shadow-sm">
@@ -73,10 +73,10 @@ function KpiCard({
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; variant: string }> = {
-    pending:  { label: 'Pendente',  variant: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
-    paid:     { label: 'Pago',      variant: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    overdue:  { label: 'Vencido',   variant: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
-    canceled: { label: 'Cancelado', variant: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
+    pending:  { label: 'Pendente',  variant: 'bg-warning/10 text-warning dark:bg-warning/20 dark:text-warning' },
+    paid:     { label: 'Pago',      variant: 'bg-success/10 text-success dark:bg-success/20 dark:text-success' },
+    overdue:  { label: 'Vencido',   variant: 'bg-danger/10 text-danger dark:bg-danger/20 dark:text-danger' },
+    canceled: { label: 'Cancelado', variant: 'bg-muted text-muted-foreground' },
   }
   const s = map[status] ?? { label: status, variant: 'bg-gray-100 text-gray-600' }
   return <span className={cn('px-2 py-0.5 rounded text-xs font-medium', s.variant)}>{s.label}</span>
@@ -468,7 +468,7 @@ function TransacoesTab({
             {rows.map(row => {
               const overdue = isOverdue(row.due_date, row.status)
               return (
-                <tr key={row.id} className={cn('border-b hover:bg-muted/20', overdue && row.status !== 'canceled' && 'bg-red-50/50 dark:bg-red-950/10')}>
+                <tr key={row.id} className={cn('border-b hover:bg-muted/20', overdue && row.status !== 'canceled' && 'bg-danger/5')}>
                   <Td>
                     <span className="font-medium">{row.description}</span>
                     {row.provider_charge_id && (
@@ -477,11 +477,11 @@ function TransacoesTab({
                   </Td>
                   <Td>{row.category ?? <span className="text-muted-foreground">—</span>}</Td>
                   <Td right className="font-semibold">
-                    <span className={type === 'receivable' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+                    <span className={type === 'receivable' ? 'text-success' : 'text-danger'}>
                       {fmt(row.amount_cents)}
                     </span>
                   </Td>
-                  <Td className={cn(overdue && row.status !== 'paid' && row.status !== 'canceled' && 'text-red-600 dark:text-red-400 font-medium')}>
+                  <Td className={cn(overdue && row.status !== 'paid' && row.status !== 'canceled' && 'text-danger font-medium')}>
                     {fmtDate(row.due_date)}
                   </Td>
                   <Td><StatusBadge status={overdue && row.status === 'pending' ? 'overdue' : row.status} /></Td>
@@ -491,7 +491,7 @@ function TransacoesTab({
                         <button
                           onClick={() => handleMarkPaid(row.id)}
                           disabled={actionId === row.id}
-                          className="text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+                          className="text-success hover:text-success disabled:opacity-50"
                           title="Marcar como pago"
                         >
                           <CheckCircle className="h-4 w-4" />
@@ -499,7 +499,7 @@ function TransacoesTab({
                         <button
                           onClick={() => handleCancel(row.id)}
                           disabled={actionId === row.id}
-                          className="text-red-500 hover:text-red-600 disabled:opacity-50 ml-1"
+                          className="text-danger hover:text-danger disabled:opacity-50 ml-1"
                           title="Cancelar"
                         >
                           <XCircle className="h-4 w-4" />

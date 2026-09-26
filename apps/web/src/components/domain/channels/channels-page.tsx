@@ -32,7 +32,7 @@ const CHANNEL_META: Record<ChannelType, {
     label: 'Mercado Livre',
     description: 'Maior marketplace da América Latina',
     icon: ShoppingBag,
-    iconColor: 'text-yellow-500',
+    iconColor: 'text-warning',
     fields: [
       { key: 'token',      label: 'Access Token',  placeholder: 'APP_USR-...', secret: true },
       { key: 'account_name', label: 'Nome da loja', placeholder: 'Ex: loja_kyra_oficial' },
@@ -42,7 +42,7 @@ const CHANNEL_META: Record<ChannelType, {
     label: 'Shopify',
     description: 'Loja virtual completa',
     icon: Store,
-    iconColor: 'text-green-500',
+    iconColor: 'text-success',
     fields: [
       { key: 'store_url', label: 'URL da loja',   placeholder: 'minha-loja.myshopify.com' },
       { key: 'token',     label: 'Admin API Token', placeholder: 'shpat_...', secret: true },
@@ -83,7 +83,7 @@ const CHANNEL_META: Record<ChannelType, {
     label: 'WhatsApp',
     description: 'Catálogo e vendas via WhatsApp',
     icon: MessageCircle,
-    iconColor: 'text-emerald-500',
+    iconColor: 'text-success',
     fields: [
       { key: 'token',       label: 'Token da API',    placeholder: 'Bearer ...', secret: true },
       { key: 'account_name', label: 'Número / conta',  placeholder: '+55 11 9...' },
@@ -117,8 +117,8 @@ function fmtRelative(iso: string | null) {
 }
 
 const STATUS_CONFIG = {
-  connected: { label: 'Conectado',    color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-  error:     { label: 'Erro',         color: 'text-red-600 dark:text-red-400',          bg: 'bg-red-50 dark:bg-red-900/20' },
+  connected: { label: 'Conectado',    color: 'text-success', bg: 'bg-success/5 dark:bg-success/10' },
+  error:     { label: 'Erro',         color: 'text-danger', bg: 'bg-danger/5 dark:bg-danger/10' },
   inactive:  { label: 'Inativo',      color: 'text-muted-foreground',                   bg: 'bg-muted' },
 }
 
@@ -207,17 +207,17 @@ function ChannelCard({ channel, onClick, onSync }: {
 
       <div className="flex items-center gap-1.5 text-xs mb-3">
         {!channel.sync_error ? (
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+          <CheckCircle2 className="h-3.5 w-3.5 text-success" />
         ) : (
-          <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+          <AlertCircle className="h-3.5 w-3.5 text-danger" />
         )}
-        <span className={!channel.sync_error ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+        <span className={!channel.sync_error ? 'text-success' : 'text-danger'}>
           {!channel.sync_error ? 'Sincronização OK' : 'Sincronização com erros'}
         </span>
       </div>
 
       {channel.sync_error && (
-        <div className="mb-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-2.5 text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
+        <div className="mb-3 rounded-lg bg-danger/5 border border-danger/20 p-2.5 text-xs text-danger flex items-start gap-2">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <span>{channel.sync_error}</span>
         </div>
@@ -442,8 +442,8 @@ function ConnectionWizard({ onClose, onConnected, canAdd, limit }: {
       {/* Step 4 — Done */}
       {step === 4 && meta && (
         <div className="flex flex-col items-center text-center gap-6 py-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+            <CheckCircle2 className="h-8 w-8 text-success" />
           </div>
           <div>
             <h3 className="text-xl font-bold">Canal conectado!</h3>
@@ -540,7 +540,7 @@ function ChannelDetail({ channel, onBack, onDisconnect, onConfigChange, onSync }
             <RefreshCw className={cn('h-3.5 w-3.5', syncing && 'animate-spin')} />
             {syncing ? 'Sincronizando...' : 'Sincronizar agora'}
           </Button>
-          <Button variant="ghost" size="sm" className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+          <Button variant="ghost" size="sm" className="gap-2 text-danger hover:text-danger hover:bg-danger/5"
             onClick={() => onDisconnect(channel.id)}>
             <Unlink className="h-3.5 w-3.5" /> Desconectar
           </Button>
@@ -560,11 +560,11 @@ function ChannelDetail({ channel, onBack, onDisconnect, onConfigChange, onSync }
       {tab === 'overview' && (
         <div className="space-y-4">
           {channel.sync_error && (
-            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="rounded-xl bg-danger/5 border border-danger/20 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-sm text-red-700 dark:text-red-400">Ação necessária</p>
-                <p className="text-sm text-red-600 dark:text-red-400/80 mt-0.5">{channel.sync_error}</p>
+                <p className="font-medium text-sm text-danger">Ação necessária</p>
+                <p className="text-sm text-danger/80 mt-0.5">{channel.sync_error}</p>
               </div>
             </div>
           )}
@@ -612,7 +612,7 @@ function ChannelDetail({ channel, onBack, onDisconnect, onConfigChange, onSync }
                     <p className="font-medium text-sm">{product?.name as string ?? '—'}</p>
                     <p className="text-xs text-muted-foreground">ID externo: {l.external_id as string}</p>
                   </div>
-                  <span className="text-xs text-emerald-600">Ativo</span>
+                  <span className="text-xs text-success">Ativo</span>
                 </div>
               )
             })}
@@ -676,7 +676,7 @@ function ChannelDetail({ channel, onBack, onDisconnect, onConfigChange, onSync }
                   <p className="text-xs text-muted-foreground">{meta.label}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 gap-1.5"
+              <Button variant="ghost" size="sm" className="text-danger hover:text-danger hover:bg-danger/5 gap-1.5"
                 onClick={() => onDisconnect(channel.id)}>
                 <Unlink className="h-3.5 w-3.5" /> Desconectar
               </Button>
@@ -800,9 +800,9 @@ export function ChannelsPage() {
       />
 
       {!canAddMore && (
-        <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 flex items-center gap-3">
-          <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <p className="text-sm text-amber-700 dark:text-amber-400">
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 flex items-center gap-3">
+          <Lock className="h-4 w-4 text-warning shrink-0" />
+          <p className="text-sm text-warning">
             Limite de {limit} canal(is) atingido. Faça upgrade para conectar mais canais.
           </p>
         </div>

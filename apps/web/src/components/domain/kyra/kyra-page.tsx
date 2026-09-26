@@ -342,22 +342,22 @@ export function KyraPage() {
               <div className="grid grid-cols-2 gap-3">
                 <InsightCard
                   chipLabel="Estoque baixo"
-                  chipBg="bg-red-500/10"
-                  chipColor="text-red-600 dark:text-red-400"
+                  chipBg="bg-danger/10"
+                  chipColor="text-danger"
                   value={kpis ? `${kpis.lowStockCount} produto${kpis.lowStockCount !== 1 ? 's' : ''}` : '—'}
                   sub="abaixo do estoque mínimo"
                   icon={Package}
-                  iconColor="text-red-400"
+                  iconColor="text-danger"
                   loading={dashLoading}
                 />
                 <InsightCard
                   chipLabel="Ruptura"
-                  chipBg="bg-amber-500/10"
-                  chipColor="text-amber-600 dark:text-amber-400"
+                  chipBg="bg-warning/10"
+                  chipColor="text-warning"
                   value={kpis ? `${kpis.outOfStockCount} produto${kpis.outOfStockCount !== 1 ? 's' : ''}` : '—'}
                   sub="sem estoque — risco de ruptura"
                   icon={TrendingDown}
-                  iconColor="text-amber-400"
+                  iconColor="text-warning"
                   loading={dashLoading}
                 />
                 <InsightCard
@@ -372,12 +372,12 @@ export function KyraPage() {
                 />
                 <InsightCard
                   chipLabel="Vendas"
-                  chipBg="bg-green-500/10"
-                  chipColor="text-green-600 dark:text-green-400"
+                  chipBg="bg-success/10"
+                  chipColor="text-success"
                   value={salesGrowth !== null ? fmtPct(salesGrowth) : kpis ? fmtCurrency(kpis.salesRevenue) : '—'}
                   sub={salesGrowth !== null ? 'vs. mês anterior' : 'receita no mês atual'}
                   icon={TrendingUp}
-                  iconColor="text-green-500"
+                  iconColor="text-success"
                   loading={dashLoading}
                 />
               </div>
@@ -543,7 +543,7 @@ export function KyraPage() {
                 {ANALYSIS_STEPS.map((step, i) => (
                   <div key={step} className="flex items-center gap-3">
                     {i < analysisStep ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
                     ) : i === analysisStep ? (
                       <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
                     ) : (
@@ -583,7 +583,7 @@ export function KyraPage() {
 
                 {!dashLoading && attentionItems.length === 0 && (
                   <div className="flex flex-col items-center py-6 text-center gap-2">
-                    <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                    <CheckCircle2 className="h-8 w-8 text-success" />
                     <p className="text-sm font-medium text-muted-foreground">Tudo em ordem!</p>
                     <p className="text-xs text-muted-foreground">Nenhum ponto de atenção no momento.</p>
                   </div>

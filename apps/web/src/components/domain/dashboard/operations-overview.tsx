@@ -10,10 +10,10 @@ interface OperationsOverviewProps {
 
 export function OperationsOverview({ activeProducts, attentionProducts, categories }: OperationsOverviewProps) {
   const healthColor = attentionProducts === 0
-    ? 'text-emerald-600'
+    ? 'text-success'
     : attentionProducts <= 5
-      ? 'text-amber-500'
-      : 'text-red-500'
+      ? 'text-warning'
+      : 'text-danger'
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">

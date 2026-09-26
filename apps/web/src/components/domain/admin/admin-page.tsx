@@ -515,8 +515,8 @@ const EVENT_ICONS: Record<string, React.ElementType> = {
   'payment.failed': AlertCircle,
 }
 const EVENT_COLORS: Record<string, string> = {
-  'subscription.created': 'text-green-500',
-  'payment.succeeded': 'text-green-500',
+  'subscription.created': 'text-success',
+  'payment.succeeded': 'text-success',
   'trial.started': 'text-blue-500',
   'subscription.cancelled': 'text-destructive',
   'payment.failed': 'text-destructive',
@@ -596,7 +596,7 @@ export function AdminPage() {
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <StatCard icon={Building2} label="Tenants ativos" value={stats.total_tenants} />
-            <StatCard icon={CheckCircle2} label="Assinaturas ativas" value={stats.active_subscriptions} color="text-green-500" />
+            <StatCard icon={CheckCircle2} label="Assinaturas ativas" value={stats.active_subscriptions} color="text-success" />
             <StatCard icon={Zap} label="Em trial" value={stats.trialing} color="text-blue-500" />
             <StatCard icon={BarChart3} label="MRR" value={stats.mrr_cents ? `R$ ${(stats.mrr_cents / 100).toFixed(0)}` : '—'} color="text-primary" />
             <StatCard icon={Ticket} label="Tickets abertos" value={stats.open_tickets} color={stats.open_tickets > 0 ? 'text-orange-500' : 'text-muted-foreground'} />

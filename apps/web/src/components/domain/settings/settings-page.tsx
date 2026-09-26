@@ -67,7 +67,7 @@ const OVERVIEW_CARDS: { id: Section; label: string; description: string; icon: R
 const PLAN_CONFIG: Record<string, { icon: React.ElementType; color: string }> = {
   starter:      { icon: Star,   color: 'text-muted-foreground' },
   professional: { icon: Zap,    color: 'text-blue-500' },
-  enterprise:   { icon: Crown,  color: 'text-amber-500' },
+  enterprise:   { icon: Crown,  color: 'text-warning' },
 }
 
 // ── Category colors ────────────────────────────────────────────
@@ -239,13 +239,13 @@ function SubscriptionSection() {
     <div className="flex flex-col gap-4">
       {/* Trial banner */}
       {isTrial && info.trialDaysLeft != null && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-5 py-4">
-          <Clock className="h-5 w-5 text-amber-500 shrink-0" />
+        <div className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/10 px-5 py-4">
+          <Clock className="h-5 w-5 text-warning shrink-0" />
           <div>
-            <p className="font-medium text-amber-800 dark:text-amber-300 text-sm">
+            <p className="font-medium text-warning text-sm">
               Seu período de teste termina em {info.trialDaysLeft} {info.trialDaysLeft === 1 ? 'dia' : 'dias'}
             </p>
-            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+            <p className="text-xs text-warning/80 mt-0.5">
               Faça upgrade para manter o acesso a todas as funcionalidades.
             </p>
           </div>
@@ -438,7 +438,7 @@ function InviteDialog({ open, onOpenChange, onInvited }: { open: boolean; onOpen
             </p>
             <div className="flex items-center gap-2 p-3 rounded-lg bg-muted border border-border">
               <p className="text-xs font-mono text-muted-foreground flex-1 truncate">{inviteLink}</p>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copyLink}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copyLink} aria-label="Copiar link de convite">
                 <Copy className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -579,6 +579,7 @@ function UsersSection() {
         <div className="flex justify-end">
           <Button
             variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+            aria-label="Remover membro"
             onClick={e => { e.stopPropagation(); setRemoveTarget(m) }}
           >
             <UserMinus className="h-4 w-4" />
@@ -836,11 +837,11 @@ function ProfilesSection() {
       key: 'actions', header: '',
       cell: (r) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); openEdit(r) }}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar papel" onClick={e => { e.stopPropagation(); openEdit(r) }}>
             <Pencil className="h-4 w-4" />
           </Button>
           {!r.isSystem && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={e => { e.stopPropagation(); setDeleteTarget(r) }}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label="Excluir papel" onClick={e => { e.stopPropagation(); setDeleteTarget(r) }}>
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
@@ -951,8 +952,8 @@ function CategoriesSection() {
       key: 'actions', header: '',
       cell: (c) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); openEdit(c) }}><Pencil className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={e => { e.stopPropagation(); setDeleteTarget(c) }}><Trash2 className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar categoria" onClick={e => { e.stopPropagation(); openEdit(c) }}><Pencil className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label="Excluir categoria" onClick={e => { e.stopPropagation(); setDeleteTarget(c) }}><Trash2 className="h-4 w-4" /></Button>
         </div>
       )
     },
@@ -1061,8 +1062,8 @@ function BrandsSection() {
       key: 'actions', header: '',
       cell: (b) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); openEdit(b) }}><Pencil className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={e => { e.stopPropagation(); setDeleteTarget(b) }}><Trash2 className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar marca" onClick={e => { e.stopPropagation(); openEdit(b) }}><Pencil className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label="Excluir marca" onClick={e => { e.stopPropagation(); setDeleteTarget(b) }}><Trash2 className="h-4 w-4" /></Button>
         </div>
       )
     },
@@ -1951,7 +1952,7 @@ const INTEGRATION_DEFS = [
     label: 'WhatsApp',
     description: 'Envio de notificações e atendimento via WhatsApp',
     icon: MessageCircle,
-    color: 'text-green-500',
+    color: 'text-success',
     fields: [
       { key: 'instance_id', label: 'Instance ID', placeholder: 'instance_xxx', secret: false },
       { key: 'token', label: 'Token', placeholder: 'Bearer token...', secret: true },

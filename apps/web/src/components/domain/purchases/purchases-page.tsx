@@ -35,10 +35,10 @@ const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR')
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft:     { label: 'Rascunho',   color: 'bg-muted text-muted-foreground' },
-  sent:      { label: 'Enviado',    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  confirmed: { label: 'Confirmado', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  received:  { label: 'Recebido',   color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  cancelled: { label: 'Cancelado',  color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  sent:      { label: 'Enviado',    color: 'bg-info/10 text-info dark:bg-info/20 dark:text-info' },
+  confirmed: { label: 'Confirmado', color: 'bg-success/10 text-success dark:bg-success/20 dark:text-success' },
+  received:  { label: 'Recebido',   color: 'bg-success/10 text-success dark:bg-success/20 dark:text-success' },
+  cancelled: { label: 'Cancelado',  color: 'bg-danger/10 text-danger dark:bg-danger/20 dark:text-danger' },
 }
 
 // ── Receive Sheet ─────────────────────────────────────────────
@@ -90,7 +90,7 @@ function ReceiveSheet({
       <SheetContent>
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Truck className="h-4 w-4 text-emerald-600" />
+            <Truck className="h-4 w-4 text-success" />
             Registrar recebimento
           </SheetTitle>
           <SheetDescription>
@@ -148,8 +148,8 @@ function ReceiveSheet({
                       <p className={cn(
                         'mt-1.5 text-xs',
                         (quantities[item.product_id] ?? 0) < (item.quantity ?? 0)
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-warning'
+                          : 'text-success'
                       )}>
                         {(quantities[item.product_id] ?? 0) < (item.quantity ?? 0)
                           ? `⚠ Recebendo menos do que o pedido (${(item.quantity ?? 0) - (quantities[item.product_id] ?? 0)} pendente)`
@@ -161,7 +161,7 @@ function ReceiveSheet({
               </div>
             </div>
 
-            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+            <div className="rounded-lg bg-success/10 border border-success/20 p-3 text-xs text-success flex items-start gap-2">
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>Ao confirmar, o estoque de cada produto será incrementado pelas quantidades recebidas e o pedido será marcado como <strong>Recebido</strong>.</span>
             </div>
@@ -242,7 +242,7 @@ function DetailSheet({
               {order.received_at && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Recebido em</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtDate(order.received_at)}</span>
+                  <span className="text-success font-medium">{fmtDate(order.received_at)}</span>
                 </div>
               )}
             </div>
@@ -502,7 +502,7 @@ export function PurchasesPage() {
           metrics={[
             { icon: Package, label: 'Produtos', value: suggestions.length },
             ...(urgentCount > 0
-              ? [{ icon: AlertTriangle, label: `${urgentCount} urgente${urgentCount > 1 ? 's' : ''}`, className: 'text-amber-600 dark:text-amber-400' }]
+              ? [{ icon: AlertTriangle, label: `${urgentCount} urgente${urgentCount > 1 ? 's' : ''}`, className: 'text-warning' }]
               : []),
           ]}
           actions={
@@ -535,20 +535,20 @@ export function PurchasesPage() {
                     <tr key={s.product_id} className="border-b border-border/50 last:border-0">
                       <td className="py-2.5 pr-4">
                         <div className="flex items-center gap-2">
-                          {s.is_urgent && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
+                          {s.is_urgent && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning" />}
                           <div>
                             <p className="font-medium">{s.product_name}</p>
                             {s.sku && <p className="text-xs text-muted-foreground">{s.sku}</p>}
                           </div>
                           {s.is_urgent && (
-                            <Badge className="ml-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs">Urgente</Badge>
+                            <Badge className="ml-1 bg-warning/10 text-warning text-xs">Urgente</Badge>
                           )}
                         </div>
                       </td>
                       <td className="py-2.5 text-right">{s.stock_quantity}</td>
                       <td className="py-2.5 text-right hidden sm:table-cell">{s.avg_daily_sales.toFixed(1)}/dia</td>
                       <td className="py-2.5 text-right hidden md:table-cell">
-                        <span className={cn(s.coverage_days <= 7 ? 'text-red-600 dark:text-red-400 font-medium' : '')}>
+                        <span className={cn(s.coverage_days <= 7 ? 'text-danger font-medium' : '')}>
                           {s.coverage_days} dias
                         </span>
                       </td>
@@ -626,7 +626,7 @@ export function PurchasesPage() {
                             Receber
                           </Button>
                         ) : o.status === 'received' ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          <span className="inline-flex items-center gap-1 text-xs text-success">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             Recebido
                           </span>

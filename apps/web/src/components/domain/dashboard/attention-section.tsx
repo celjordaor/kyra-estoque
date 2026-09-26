@@ -6,18 +6,18 @@ import type { AttentionItem } from '@/lib/actions/dashboard'
 
 const PRIORITY_CONFIG = {
   high: {
-    border: 'border-l-red-500',
-    bg: 'bg-red-50',
-    badge: 'bg-red-50 border border-red-200 text-red-700',
+    border: 'border-l-danger',
+    bg: 'bg-danger/5',
+    badge: 'bg-danger/5 border border-danger/20 text-danger',
     label: 'Urgente',
-    icon: <AlertTriangle className="h-4 w-4 text-red-500" />,
+    icon: <AlertTriangle className="h-4 w-4 text-danger" />,
   },
   medium: {
-    border: 'border-l-amber-400',
-    bg: 'bg-amber-50',
-    badge: 'bg-amber-50 border border-amber-200 text-amber-700',
+    border: 'border-l-warning',
+    bg: 'bg-warning/5',
+    badge: 'bg-warning/5 border border-warning/20 text-warning',
     label: 'Atenção',
-    icon: <TrendingDown className="h-4 w-4 text-amber-500" />,
+    icon: <TrendingDown className="h-4 w-4 text-warning" />,
   },
   opportunity: {
     border: 'border-l-primary',
@@ -45,8 +45,8 @@ export function AttentionSection({ items }: AttentionSectionProps) {
       <div className="rounded-2xl border border-border bg-card p-6">
         <h2 className="text-base font-semibold text-foreground mb-4">O que merece sua atenção</h2>
         <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mb-2">
-            <Sparkles className="h-5 w-5 text-emerald-500" />
+          <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center mb-2">
+            <Sparkles className="h-5 w-5 text-success" />
           </div>
           <p className="text-sm font-medium text-foreground">Tudo em ordem por aqui</p>
           <p className="text-xs text-muted-foreground">Nenhum alerta no momento. Kyra está monitorando.</p>

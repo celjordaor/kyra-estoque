@@ -75,7 +75,7 @@ const TRIGGERS: TriggerOption[] = [
     label: 'Estoque mínimo atingido',
     description: 'Quando um produto cair abaixo do estoque mínimo configurado',
     icon: AlertTriangle,
-    color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/30',
+    color: 'text-warning bg-warning/10',
   },
   {
     value: 'no_sales',
@@ -89,14 +89,14 @@ const TRIGGERS: TriggerOption[] = [
     label: 'Compra em atraso',
     description: 'Quando uma ordem de compra vencer sem confirmação de entrega',
     icon: ShoppingCart,
-    color: 'text-red-500 bg-red-50 dark:bg-red-950/30',
+    color: 'text-danger bg-danger/10',
   },
   {
     value: 'sale_happened',
     label: 'Nova venda registrada',
     description: 'A cada nova venda concluída no sistema',
     icon: ShoppingBag,
-    color: 'text-green-500 bg-green-50 dark:bg-green-950/30',
+    color: 'text-success bg-success/10',
   },
 ]
 

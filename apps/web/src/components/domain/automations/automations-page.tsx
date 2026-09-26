@@ -43,7 +43,7 @@ const TRIGGER_CATALOGUE: TriggerMeta[] = [
     description: 'Avisa quando um produto atinge o estoque mínimo configurado.',
     detail: 'A Kyra monitora continuamente o estoque. Assim que um produto fica abaixo do mínimo, você recebe uma notificação para iniciar a reposição a tempo.',
     icon: AlertTriangle,
-    color: 'bg-amber-500',
+    color: 'bg-warning',
     triggerLabel: 'Quando estoque ≤ mínimo configurado',
   },
   {
@@ -61,7 +61,7 @@ const TRIGGER_CATALOGUE: TriggerMeta[] = [
     description: 'Alerta quando uma ordem de compra vence sem confirmação de entrega.',
     detail: 'Ordens de compra sem entrega no prazo podem gerar ruptura de estoque. A Kyra avisa para você acompanhar com o fornecedor.',
     icon: ShoppingCart,
-    color: 'bg-red-500',
+    color: 'bg-danger',
     triggerLabel: 'Prazo de entrega vencido sem baixa',
   },
   {
@@ -70,7 +70,7 @@ const TRIGGER_CATALOGUE: TriggerMeta[] = [
     description: 'Notifica a cada nova venda concluída no sistema.',
     detail: 'Ideal para equipes que precisam acompanhar as vendas em tempo real. A Kyra envia o aviso assim que a venda é registrada.',
     icon: ShoppingBag,
-    color: 'bg-green-500',
+    color: 'bg-success',
     triggerLabel: 'A cada nova venda registrada',
   },
   {

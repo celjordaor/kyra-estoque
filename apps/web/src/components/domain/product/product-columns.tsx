@@ -109,6 +109,7 @@ function StockMovementPopover({
           size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
           title="Movimentar estoque"
+          aria-label="Movimentar estoque"
         >
           <ArrowUpDown className="h-3.5 w-3.5" />
         </Button>

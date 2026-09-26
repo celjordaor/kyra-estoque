@@ -59,8 +59,8 @@ const STATUS_CONFIG = {
 }
 
 const MOV_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  ENTRADA: { label: 'Entrada', icon: ArrowDown, color: 'text-green-600' },
-  SAIDA: { label: 'Saída', icon: ArrowUp, color: 'text-red-500' },
+  ENTRADA: { label: 'Entrada', icon: ArrowDown, color: 'text-success' },
+  SAIDA: { label: 'Saída', icon: ArrowUp, color: 'text-danger' },
   AJUSTE: { label: 'Ajuste', icon: ArrowLeftRight, color: 'text-blue-500' },
   INVENTARIO: { label: 'Inventário', icon: ClipboardList, color: 'text-purple-500' },
   TRANSFERENCIA: { label: 'Transferência', icon: ArrowLeftRight, color: 'text-orange-500' },
@@ -166,8 +166,8 @@ export function StockPage() {
               <Button><Plus className="mr-2 h-4 w-4" />Movimentar estoque<ChevronDown className="ml-2 h-3.5 w-3.5" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openMovement('ENTRADA')}><ArrowDown className="mr-2 h-4 w-4 text-green-600" />Entrada</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openMovement('SAIDA')}><ArrowUp className="mr-2 h-4 w-4 text-red-500" />Saída</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openMovement('ENTRADA')}><ArrowDown className="mr-2 h-4 w-4 text-success" />Entrada</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openMovement('SAIDA')}><ArrowUp className="mr-2 h-4 w-4 text-danger" />Saída</DropdownMenuItem>
               <DropdownMenuItem onClick={() => openMovement('AJUSTE')}><ArrowLeftRight className="mr-2 h-4 w-4 text-blue-500" />Ajuste</DropdownMenuItem>
               <DropdownMenuItem onClick={() => openMovement('INVENTARIO')}><ClipboardList className="mr-2 h-4 w-4 text-purple-500" />Inventário</DropdownMenuItem>
             </DropdownMenuContent>
@@ -190,7 +190,7 @@ export function StockPage() {
             {summary.lowStock > 0 && (
               <KyraAttentionItem
                 icon={AlertTriangle}
-                iconColor="bg-amber-500"
+                iconColor="bg-warning"
                 title={`${summary.lowStock} produto${summary.lowStock > 1 ? 's' : ''} pode${summary.lowStock > 1 ? 'm' : ''} acabar em breve`}
                 sub="Estoque abaixo do mínimo configurado"
                 action="Ver produtos"
@@ -356,7 +356,7 @@ export function StockPage() {
                             <span>{cfg.label}</span>
                           </div>
                         </td>
-                        <td className={cn('px-4 py-3 text-right tabular-nums font-medium', isDebit ? 'text-red-500' : 'text-green-600')}>
+                        <td className={cn('px-4 py-3 text-right tabular-nums font-medium', isDebit ? 'text-danger' : 'text-success')}>
                           {isDebit ? '-' : '+'}{m.quantity}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{m.notes ?? m.reference_type ?? '—'}</td>

@@ -39,10 +39,10 @@ function fmtChave(chave: string | null) {
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 const STATUS_MAP: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
-  authorized:  { label: 'Autorizada',   cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400', Icon: CheckCircle2 },
+  authorized:  { label: 'Autorizada',   cls: 'bg-success/10 text-success', Icon: CheckCircle2 },
   processing:  { label: 'Processando',  cls: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',             Icon: Clock },
   pending:     { label: 'Pendente',     cls: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',     Icon: Clock },
-  rejected:    { label: 'Rejeitada',    cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',                 Icon: AlertTriangle },
+  rejected:    { label: 'Rejeitada',    cls: 'bg-danger/10 text-danger',                 Icon: AlertTriangle },
   canceled:    { label: 'Cancelada',    cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',               Icon: XCircle },
   import:      { label: 'Importada',    cls: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',    Icon: Upload },
 }
@@ -249,7 +249,7 @@ function DocsTab({ hasFeature }: { hasFeature: boolean }) {
                             rel="noopener noreferrer"
                             title="Baixar DANFE"
                           >
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Baixar DANFE">
                               <Download className="h-3.5 w-3.5" />
                             </Button>
                           </a>
@@ -260,6 +260,7 @@ function DocsTab({ hasFeature }: { hasFeature: boolean }) {
                             size="icon"
                             className="h-7 w-7"
                             title="Sincronizar status"
+                            aria-label="Sincronizar status"
                             disabled={syncing === doc.id}
                             onClick={() => handleSync(doc.id)}
                           >
@@ -270,8 +271,9 @@ function DocsTab({ hasFeature }: { hasFeature: boolean }) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-red-500 hover:text-red-700"
+                            className="h-7 w-7 text-danger hover:text-danger-hover"
                             title="Cancelar NF-e"
+                            aria-label="Cancelar NF-e"
                             onClick={() => setCancelDialog({ id: doc.id, numero: doc.numero ?? doc.id })}
                           >
                             <XCircle className="h-3.5 w-3.5" />
@@ -281,8 +283,9 @@ function DocsTab({ hasFeature }: { hasFeature: boolean }) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-red-600"
+                            className="h-7 w-7 text-muted-foreground hover:text-danger"
                             title="Excluir documento"
+                            aria-label="Excluir documento"
                             disabled={deleting === doc.id}
                             onClick={() => handleDelete(doc.id)}
                           >

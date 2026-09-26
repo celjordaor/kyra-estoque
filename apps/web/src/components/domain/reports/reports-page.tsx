@@ -105,8 +105,8 @@ function DateRangePicker({ start, end, onChange }: {
 function LockedReport({ name }: { name: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-        <Lock className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-warning/10">
+        <Lock className="h-8 w-8 text-warning" />
       </div>
       <div>
         <p className="text-lg font-semibold">Relatório bloqueado</p>
@@ -114,7 +114,7 @@ function LockedReport({ name }: { name: string }) {
           O relatório de <strong>{name}</strong> está disponível no plano Impulsiona ou superior.
         </p>
       </div>
-      <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-white">
+      <Button asChild size="sm" className="bg-warning hover:bg-warning/90 text-white">
         <a href="/settings?tab=billing">Ver planos</a>
       </Button>
     </div>
@@ -123,14 +123,14 @@ function LockedReport({ name }: { name: string }) {
 
 // ── Stock status badge ─────────────────────────────────────────
 const STOCK_STATUS: Record<string, { label: string; class: string }> = {
-  OK:    { label: 'OK',     class: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  BAIXO: { label: 'Baixo',  class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  ZERADO:{ label: 'Zerado', class: 'bg-red-100   text-red-700   dark:bg-red-900/30   dark:text-red-400' },
+  OK:    { label: 'OK',     class: 'bg-success/10 text-success' },
+  BAIXO: { label: 'Baixo',  class: 'bg-warning/10 text-warning' },
+  ZERADO:{ label: 'Zerado', class: 'bg-danger/10 text-danger' },
 }
 
 // ── ABC Curve badge ────────────────────────────────────────────
 const ABC_CONFIG: Record<string, { class: string }> = {
-  A: { class: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  A: { class: 'bg-success/10 text-success' },
   B: { class: 'bg-blue-100  text-blue-700  dark:bg-blue-900/30  dark:text-blue-400' },
   C: { class: 'bg-muted text-muted-foreground dark:bg-slate-800    dark:text-slate-400' },
 }
@@ -226,7 +226,7 @@ function EstoqueTab() {
           <KpiCard label="Total de itens" value={summary.total_items.toString()} />
           <KpiCard label="Valor em estoque" value={fmtCurrency(summary.total_value)} color="text-primary" />
           <KpiCard label="Alertas" value={summary.alerts.toString()} color={summary.alerts > 0 ? 'text-destructive' : undefined} />
-          <KpiCard label="Saudáveis" value={(summary.total_items - summary.alerts).toString()} color="text-green-600 dark:text-green-400" />
+          <KpiCard label="Saudáveis" value={(summary.total_items - summary.alerts).toString()} color="text-success" />
         </div>
       )}
 
@@ -325,8 +325,8 @@ function MovimentacoesTab() {
   }
 
   const MOV_COLORS: Record<string, string> = {
-    ENTRADA: 'text-green-600 dark:text-green-400',
-    SAIDA:   'text-red-600   dark:text-red-400',
+    ENTRADA: 'text-success',
+    SAIDA:   'text-danger',
     AJUSTE:  'text-blue-600  dark:text-blue-400',
   }
 
@@ -335,8 +335,8 @@ function MovimentacoesTab() {
       {summary && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <KpiCard label="Total movimentos" value={summary.total.toString()} />
-          <KpiCard label="Entradas" value={summary.entradas.toString()} color="text-green-600 dark:text-green-400" />
-          <KpiCard label="Saídas" value={summary.saidas.toString()} color="text-red-600 dark:text-red-400" />
+          <KpiCard label="Entradas" value={summary.entradas.toString()} color="text-success" />
+          <KpiCard label="Saídas" value={summary.saidas.toString()} color="text-danger" />
           <KpiCard label="Ajustes" value={summary.ajustes.toString()} color="text-blue-600 dark:text-blue-400" />
         </div>
       )}
@@ -426,7 +426,7 @@ function VendasTab() {
           <KpiCard label="Receita total" value={fmtCurrency(data.summary.total_revenue)} color="text-primary" />
           <KpiCard label="Total de pedidos" value={data.summary.total_orders.toString()} />
           <KpiCard label="Ticket médio" value={fmtCurrency(data.summary.avg_ticket)} />
-          <KpiCard label="Lucro bruto" value={fmtCurrency(data.summary.total_profit)} color="text-green-600 dark:text-green-400" />
+          <KpiCard label="Lucro bruto" value={fmtCurrency(data.summary.total_profit)} color="text-success" />
         </div>
       )}
 
@@ -460,9 +460,9 @@ function VendasTab() {
                     <Td>{r.category}</Td>
                     <Td right mono>{r.qty_sold}</Td>
                     <Td right>{fmtCurrency(r.revenue)}</Td>
-                    <Td right><span className="text-green-600 dark:text-green-400">{fmtCurrency(r.profit)}</span></Td>
+                    <Td right><span className="text-success">{fmtCurrency(r.profit)}</span></Td>
                     <Td right>
-                      <span className={cn(r.margin_pct >= 30 ? 'text-green-600 dark:text-green-400' : r.margin_pct >= 15 ? 'text-amber-600' : 'text-red-600')}>
+                      <span className={cn(r.margin_pct >= 30 ? 'text-success' : r.margin_pct >= 15 ? 'text-warning' : 'text-danger')}>
                         {fmtPct(r.margin_pct)}
                       </span>
                     </Td>
@@ -545,8 +545,8 @@ function ComprasTab() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <KpiCard label="Total de pedidos" value={summary.total.toString()} />
           <KpiCard label="Valor total" value={fmtCurrency(summary.total_amount)} color="text-primary" />
-          <KpiCard label="Recebidos" value={summary.received.toString()} color="text-green-600 dark:text-green-400" />
-          <KpiCard label="Pendentes" value={summary.pending.toString()} color={summary.pending > 0 ? 'text-amber-600' : undefined} />
+          <KpiCard label="Recebidos" value={summary.received.toString()} color="text-success" />
+          <KpiCard label="Pendentes" value={summary.pending.toString()} color={summary.pending > 0 ? 'text-warning' : undefined} />
         </div>
       )}
 
@@ -579,9 +579,9 @@ function ComprasTab() {
                 <Td>
                   <span className={cn(
                     'rounded-full px-2 py-0.5 text-xs font-medium',
-                    r.status === 'received' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                    r.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                    r.status === 'received' ? 'bg-success/10 text-success' :
+                    r.status === 'cancelled' ? 'bg-danger/10 text-danger' :
+                    'bg-warning/10 text-warning'
                   )}>
                     {PO_STATUS[r.status] ?? r.status}
                   </span>
@@ -640,7 +640,7 @@ function AbcTab() {
     <div className="space-y-5">
       {!loading && rows.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
-          <KpiCard label="Curva A (20% produtos)" value={`${summary.A.length} produtos`} sub={`${fmtPct(summary.A.reduce((a, r) => a + r.revenue_pct, 0))} da receita`} color="text-green-600 dark:text-green-400" />
+          <KpiCard label="Curva A (20% produtos)" value={`${summary.A.length} produtos`} sub={`${fmtPct(summary.A.reduce((a, r) => a + r.revenue_pct, 0))} da receita`} color="text-success" />
           <KpiCard label="Curva B" value={`${summary.B.length} produtos`} sub={`${fmtPct(summary.B.reduce((a, r) => a + r.revenue_pct, 0))} da receita`} color="text-blue-600 dark:text-blue-400" />
           <KpiCard label="Curva C (80% produtos)" value={`${summary.C.length} produtos`} sub={`${fmtPct(summary.C.reduce((a, r) => a + r.revenue_pct, 0))} da receita`} color="text-muted-foreground" />
         </div>
@@ -728,7 +728,7 @@ function ParadosTab() {
     <div className="space-y-5">
       {summary && (
         <div className="grid grid-cols-3 gap-4">
-          <KpiCard label="Produtos parados" value={summary.total.toString()} color={summary.total > 0 ? 'text-amber-600' : undefined} />
+          <KpiCard label="Produtos parados" value={summary.total.toString()} color={summary.total > 0 ? 'text-warning' : undefined} />
           <KpiCard label="Capital imobilizado" value={fmtCurrency(summary.total_value)} color="text-destructive" />
           <KpiCard label="Média de dias parado" value={`${Math.round(summary.avg_days)} dias`} />
         </div>
@@ -774,10 +774,10 @@ function ParadosTab() {
                 <Td><span className="font-mono text-xs text-muted-foreground">{r.sku ?? '—'}</span></Td>
                 <Td>{r.category ?? '—'}</Td>
                 <Td right mono>{r.stock}</Td>
-                <Td right><span className="font-semibold text-amber-600">{fmtCurrency(r.stock_value)}</span></Td>
+                <Td right><span className="font-semibold text-warning">{fmtCurrency(r.stock_value)}</span></Td>
                 <Td>{r.last_movement ? fmtDate(r.last_movement) : <span className="text-muted-foreground">Nunca</span>}</Td>
                 <Td right>
-                  <span className={cn('font-bold font-mono', r.days_stopped > 90 ? 'text-red-600 dark:text-red-400' : 'text-amber-600')}>
+                  <span className={cn('font-bold font-mono', r.days_stopped > 90 ? 'text-danger' : 'text-warning')}>
                     {r.days_stopped}
                   </span>
                 </Td>
@@ -827,10 +827,10 @@ function MargemTab() {
     <div className="space-y-5">
       {summary && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <KpiCard label="Margem média" value={fmtPct(summary.avg_margin)} color={summary.avg_margin >= 30 ? 'text-green-600 dark:text-green-400' : summary.avg_margin >= 15 ? 'text-amber-600' : 'text-red-600'} />
+          <KpiCard label="Margem média" value={fmtPct(summary.avg_margin)} color={summary.avg_margin >= 30 ? 'text-success' : summary.avg_margin >= 15 ? 'text-warning' : 'text-danger'} />
           <KpiCard label="Receita total" value={fmtCurrency(summary.total_revenue)} color="text-primary" />
-          <KpiCard label="Lucro bruto total" value={fmtCurrency(summary.total_profit)} color="text-green-600 dark:text-green-400" />
-          <KpiCard label="Boa margem (≥30%)" value={summary.high_margin.toString()} sub="produtos" color="text-green-600 dark:text-green-400" />
+          <KpiCard label="Lucro bruto total" value={fmtCurrency(summary.total_profit)} color="text-success" />
+          <KpiCard label="Boa margem (≥30%)" value={summary.high_margin.toString()} sub="produtos" color="text-success" />
         </div>
       )}
 
@@ -856,7 +856,7 @@ function MargemTab() {
               <tr><td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">Nenhum produto encontrado</td></tr>
             )}
             {rows.map(r => {
-              const marginColor = r.margin_pct >= 30 ? 'text-green-600 dark:text-green-400' : r.margin_pct >= 15 ? 'text-amber-600' : 'text-red-600 dark:text-red-400'
+              const marginColor = r.margin_pct >= 30 ? 'text-success' : r.margin_pct >= 15 ? 'text-warning' : 'text-danger'
               return (
                 <tr key={r.product_id} className="hover:bg-muted/30">
                   <Td><span className="font-medium">{r.name}</span></Td>
@@ -869,7 +869,7 @@ function MargemTab() {
                     <span className={cn('font-bold', marginColor)}>{fmtPct(r.margin_pct)}</span>
                   </Td>
                   <Td right mono>{r.total_sold_qty}</Td>
-                  <Td right><span className="font-semibold text-green-600 dark:text-green-400">{fmtCurrency(r.total_profit)}</span></Td>
+                  <Td right><span className="font-semibold text-success">{fmtCurrency(r.total_profit)}</span></Td>
                 </tr>
               )
             })}
@@ -925,7 +925,7 @@ export function ReportsPage() {
               <Icon className="h-4 w-4 shrink-0" />
               {tab.label}
               {(tab.id === 'abc' || tab.id === 'parados' || tab.id === 'margem') && !isActive && (
-                <Lock className="h-3 w-3 text-amber-500 opacity-70" />
+                <Lock className="h-3 w-3 text-warning opacity-70" />
               )}
             </button>
           )
