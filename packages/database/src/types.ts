@@ -83,6 +83,7 @@ export interface ProfileRow {
   avatar_url: string | null
   role: UserRole
   is_active: boolean
+  is_super_admin: boolean
   last_seen_at: string | null
   created_at: string
   updated_at: string

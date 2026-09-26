@@ -234,7 +234,7 @@ export async function triggerAutomation(
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: 'Kyra Estoque <automacoes@kyraestoque.com.br>', to: [userEmail], subject, html }),
+        body: JSON.stringify({ from: 'Kyra Estoque <admin@kyraestoque.com.br>', to: [userEmail], subject, html }),
       }).catch(err => { console.error('[triggerAutomation] Resend error:', err); return null })
 
       if (!res || !res.ok) {

@@ -123,7 +123,7 @@ function HeroMockup() {
           {["bg-red-400", "bg-amber-400", "bg-green-400"].map((c, i) => <div key={i} className={`w-2.5 h-2.5 rounded-full ${c}`} />)}
         </div>
         <div className="flex-1 mx-3 bg-muted rounded-md px-3 py-1 text-center" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#94A3B8" }}>
-          app.kyraestoque.com.br
+          kyraestoque.com.br
         </div>
       </div>
       {/* App shell */}
