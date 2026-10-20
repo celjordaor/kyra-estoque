@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Sparkles, Send, Clock, Package, TrendingDown, ShoppingCart,
   TrendingUp, ArrowRight, CheckCircle2, Loader2, BarChart2,
-  Users, Zap, Calendar
+  Users, Zap, Calendar, History
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/layout/page-header'
@@ -13,6 +13,7 @@ import { KyraCard } from '@/components/ai/kyra-card'
 import { UpgradePrompt } from '@/components/ui/upgrade-prompt'
 import { cn } from '@/lib/utils'
 import { getCurrentUserFirstName } from '@/lib/actions/settings'
+import { getConversation } from '@/lib/actions/kyra-history'
 import { getDashboardData } from '@/lib/actions/dashboard'
 import type { DashboardData, AttentionItem } from '@/lib/actions/dashboard'
 
@@ -184,6 +185,7 @@ export function KyraPage() {
   const [thinking, setThinking] = React.useState(false)
   const [analysisStep, setAnalysisStep] = React.useState(-1)
   const [upgradePrompt, setUpgradePrompt] = React.useState<{ open: boolean; limit?: number | null }>({ open: false })
+  const [conversationId, setConversationId] = React.useState<string | null>(null)
   const [userName, setUserName] = React.useState('')
   const [dashData, setDashData] = React.useState<DashboardData | null>(null)
   const [dashLoading, setDashLoading] = React.useState(true)
@@ -212,6 +214,24 @@ export function KyraPage() {
       autoSentRef.current = true
       sendMessage(decodeURIComponent(q))
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Load existing conversation via ?conversation_id=
+  React.useEffect(() => {
+    const cid = searchParams?.get('conversation_id')
+    if (!cid || autoSentRef.current) return
+    autoSentRef.current = true
+    setConversationId(cid)
+    getConversation(cid).then(conv => {
+      if (!conv) return
+      setMessages(conv.messages.map(m => ({
+        id: crypto.randomUUID(),
+        role: m.role,
+        text: m.content,
+        ts: new Date(),
+      })))
+    }).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -248,7 +268,7 @@ export function KyraPage() {
       const res = await fetch('/api/kyra/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({ messages: apiMessages, conversation_id: conversationId }),
       })
 
       if (res.status === 429) {
@@ -278,6 +298,7 @@ export function KyraPage() {
         ts: new Date(),
       }
       setMessages(prev => [...prev, kyraMsg])
+      if (data.conversation_id) setConversationId(data.conversation_id)
 
     } catch {
       const kyraErr: Message = {
@@ -323,6 +344,15 @@ export function KyraPage() {
         title="Assistente"
         description="Converse com a Kyra sobre sua operação."
         icon={Sparkles}
+        actions={
+          <a
+            href="/kyra/history"
+            className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <History className="h-4 w-4" />
+            Histórico
+          </a>
+        }
       />
 
       <div className="flex flex-1 overflow-hidden">

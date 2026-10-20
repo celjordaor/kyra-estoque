@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     // ── 4. Parse body ─────────────────────────────────────────
     const body = await req.json()
     const clientMessages: MessageParam[] = body.messages ?? []
+    const incomingConversationId: string | null = body.conversation_id ?? null
 
     if (!clientMessages.length) {
       return Response.json({ error: 'Mensagens não fornecidas' }, { status: 400 })
@@ -138,15 +139,54 @@ export async function POST(req: NextRequest) {
     // D7: kyra_consultada — silencioso
     completeCheckpoint(companyId, 'kyra_consultada').catch(() => {})
 
-    // ── 8. Retornar resposta ──────────────────────────────────
-    // Extrai apenas blocos de texto (não inclui tool_use)
+    // ── 8. Extrair resposta de texto ─────────────────
     const textContent = finalResponse.content
       .filter(b => b.type === 'text')
       .map(b => (b as Anthropic.TextBlock).text)
-      .join('\n\n')
+      .join('
+
+')
+
+    // ── 9. Persistir conversa em ai_conversations ───────────
+    const persistMessages = [
+      ...clientMessages.filter(m =>
+        typeof m.content === 'string' ||
+        (Array.isArray(m.content) && (m.content as {type:string}[]).every(b => b.type === 'text'))
+      ),
+      { role: 'assistant' as const, content: textContent },
+    ]
+    const firstUserMsg = persistMessages.find(m => m.role === 'user')
+    const title = typeof firstUserMsg?.content === 'string'
+      ? firstUserMsg.content.slice(0, 80)
+      : 'Conversa'
+    const totalTokens = (finalResponse.usage.input_tokens ?? 0) + (finalResponse.usage.output_tokens ?? 0)
+
+    let conversationId = incomingConversationId
+    try {
+      if (incomingConversationId) {
+        await admin.from('ai_conversations').update({
+          messages: persistMessages,
+          token_count: totalTokens,
+          updated_at: new Date().toISOString(),
+        }).eq('id', incomingConversationId).eq('company_id', companyId)
+      } else {
+        const { data: conv } = await admin.from('ai_conversations').insert({
+          company_id: companyId,
+          user_id: user.id,
+          title,
+          messages: persistMessages,
+          model: 'claude-opus-4-5',
+          token_count: totalTokens,
+        }).select('id').single()
+        conversationId = conv?.id ?? null
+      }
+    } catch (persistErr) {
+      console.error('[kyra/chat] persist error:', persistErr)
+    }
 
     return Response.json({
       content: textContent,
+      conversation_id: conversationId,
       usage: {
         input_tokens: finalResponse.usage.input_tokens,
         output_tokens: finalResponse.usage.output_tokens,
