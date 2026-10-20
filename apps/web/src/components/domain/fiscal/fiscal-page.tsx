@@ -16,6 +16,7 @@ import {
   getNfeDocuments, importXml, syncNfeStatus, cancelNfeDoc, deleteNfeDoc,
 } from '@/lib/actions/nfe'
 import type { NfeDocument } from '@/lib/actions/nfe'
+import { FiscalConfigForm } from '@/components/domain/fiscal/fiscal-config-form'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -532,7 +533,7 @@ function ImportTab({ hasFeature }: { hasFeature: boolean }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 
-type Tab = 'docs' | 'import'
+type Tab = 'docs' | 'import' | 'config'
 
 export function FiscalPage() {
   const [tab, setTab] = React.useState<Tab>('docs')
@@ -551,6 +552,7 @@ export function FiscalPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'docs',   label: 'Documentos' },
     { id: 'import', label: 'Importar XML' },
+    { id: 'config', label: 'Configurações' },
   ]
 
   return (
@@ -586,8 +588,10 @@ export function FiscalPage() {
         </div>
       ) : tab === 'docs' ? (
         <DocsTab hasFeature={hasImport || hasEmission} />
-      ) : (
+      ) : tab === 'import' ? (
         <ImportTab hasFeature={hasImport} />
+      ) : (
+        <FiscalConfigForm />
       )}
     </div>
   )

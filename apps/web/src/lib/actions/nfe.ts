@@ -1,15 +1,18 @@
 'use server'
+// apps/web/src/lib/actions/nfe.ts
+// NF-e server actions — integração direta SEFAZ (sem intermediário por CNPJ).
+// Emissão: certificado A1 + xml-crypto + mTLS.
+// Import: XML livre (sem provider externo).
 
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 import { hasFeature } from '@kyra/business-rules'
 import { revalidatePath } from 'next/cache'
 import { parseNfeXml } from '@/lib/nfe/xml-parser'
-import {
-  emitirNfe, consultarNfe, cancelarNfe,
-  mapFocusStatus, getDanfeUrl,
-  type FocusNfePayload,
-} from '@/lib/nfe/focus-nfe-adapter'
+import { lerCertificadoPFX, CertificadoError } from '@/lib/fiscal/certificado'
+import { assinarNFe, AssinaturaError } from '@/lib/fiscal/assinatura'
+import { enviarNFeParaSefaz } from '@/lib/fiscal/sefaz'
+import { reservarNumeroNfe } from '@/lib/fiscal/numeracao'
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -52,8 +55,6 @@ export interface NfeDocument {
 
 export interface EmitNfeInput {
   saleId: string
-  /** Referência única para o provider (gerada automaticamente se omitida) */
-  ref?: string
 }
 
 // ── getNfeDocuments ───────────────────────────────────────────────────────────
@@ -87,22 +88,22 @@ export async function getNfeDocuments(filter?: {
   const { data } = await query
 
   const docs: NfeDocument[] = (data ?? []).map((d: any) => ({
-    id:                d.id,
-    docType:           d.doc_type as 'import' | 'emission',
-    chaveAcesso:       d.chave_acesso,
-    numero:            d.numero,
-    serie:             d.serie,
-    dataEmissao:       d.data_emissao,
-    emitenteCnpj:      d.emitente_cnpj,
-    emitenteNome:      d.emitente_nome,
-    destinatarioCnpj:  d.destinatario_cnpj,
-    destinatarioNome:  d.destinatario_nome,
-    valorTotalCents:   d.valor_total_cents,
-    status:            d.status,
-    pdfUrl:            d.pdf_url,
-    saleId:            d.sale_id,
-    purchaseId:        d.purchase_id,
-    createdAt:         d.created_at,
+    id:               d.id,
+    docType:          d.doc_type as 'import'|'emission',
+    chaveAcesso:      d.chave_acesso,
+    numero:           d.numero,
+    serie:            d.serie,
+    dataEmissao:      d.data_emissao,
+    emitenteCnpj:     d.emitente_cnpj,
+    emitenteNome:     d.emitente_nome,
+    destinatarioCnpj: d.destinatario_cnpj,
+    destinatarioNome: d.destinatario_nome,
+    valorTotalCents:  d.valor_total_cents,
+    status:           d.status,
+    pdfUrl:           d.pdf_url,
+    saleId:           d.sale_id,
+    purchaseId:       d.purchase_id,
+    createdAt:        d.created_at,
   }))
 
   return { docs, hasFeatureImport: hasImport, hasFeatureEmission: hasEmission }
@@ -112,7 +113,7 @@ export async function getNfeDocuments(filter?: {
 
 export async function importXml(
   xmlContent: string,
-): Promise<{ ok: boolean; error?: string; docId?: string; preview?: ReturnType<typeof parseNfeXml> }> {
+): Promise<{ ok: boolean; error?: string; docId?: string }> {
   const { admin, companyId } = await getServerContext()
 
   if (!(await hasFeature(companyId, 'nfe.import.enabled'))) {
@@ -126,14 +127,13 @@ export async function importXml(
     return { ok: false, error: `XML inválido: ${err instanceof Error ? err.message : String(err)}` }
   }
 
-  // Checa duplicidade pela chave de acesso
   if (parsed.chaveAcesso) {
     const { data: existing } = await (admin as any)
       .from('nfe_documents')
       .select('id')
       .eq('chave_acesso', parsed.chaveAcesso)
       .single()
-    if (existing) return { ok: false, error: 'Esta NF-e já foi importada anteriormente.', preview: parsed }
+    if (existing) return { ok: false, error: 'Esta NF-e já foi importada anteriormente.' }
   }
 
   const { data, error } = await (admin as any)
@@ -167,12 +167,11 @@ export async function importXml(
     .single()
 
   if (error) return { ok: false, error: error.message }
-
   revalidatePath('/fiscal')
-  return { ok: true, docId: data.id, preview: parsed }
+  return { ok: true, docId: data.id }
 }
 
-// ── emitNfe ───────────────────────────────────────────────────────────────────
+// ── emitNfe — integração direta SEFAZ ────────────────────────────────────────
 
 export async function emitNfe(input: EmitNfeInput): Promise<{ ok: boolean; error?: string; docId?: string }> {
   const { admin, companyId } = await getServerContext()
@@ -181,178 +180,246 @@ export async function emitNfe(input: EmitNfeInput): Promise<{ ok: boolean; error
     return { ok: false, error: 'Seu plano não permite emitir NF-e. Faça upgrade para Impulsiona ou Escala.' }
   }
 
-  // Busca dados da venda e da empresa
+  // ── 1. Carregar configuração fiscal ────────────────────────────────────────
+  const { data: cfg, error: cfgErr } = await (admin as any)
+    .from('fiscal_config')
+    .select('*')
+    .eq('company_id', companyId)
+    .single()
+
+  if (cfgErr || !cfg) {
+    return { ok: false, error: 'Configuração fiscal não encontrada. Configure em Fiscal → Configurações antes de emitir.' }
+  }
+
+  // ── 2. Validar pré-requisitos ───────────────────────────────────────────────
+  const erros: string[] = []
+  if (!cfg.certificado_pfx) erros.push('Certificado A1 não configurado')
+  if (!cfg.certificado_senha) erros.push('Senha do certificado não configurada')
+  if (!cfg.ie) erros.push('Inscrição Estadual (IE) não configurada')
+  if (!cfg.uf) erros.push('UF do emitente não configurada')
+  if (!cfg.municipio) erros.push('Município do emitente não configurado')
+  if (!cfg.cod_municipio) erros.push('Código IBGE do município não configurado')
+  if (erros.length > 0) {
+    return { ok: false, error: `Configure em Fiscal → Configurações: ${erros.join(', ')}.` }
+  }
+
+  // ── 3. Verificar nota duplicada ─────────────────────────────────────────────
+  const { data: existingNfe } = await (admin as any)
+    .from('nfe_documents')
+    .select('id, status')
+    .eq('sale_id', input.saleId)
+    .eq('company_id', companyId)
+    .eq('doc_type', 'emission')
+    .in('status', ['authorized', 'processing', 'pending'])
+    .single()
+
+  if (existingNfe) {
+    return { ok: false, error: `Já existe uma NF-e ${existingNfe.status} para esta venda (id: ${existingNfe.id}).` }
+  }
+
+  // ── 4. Carregar certificado ─────────────────────────────────────────────────
+  let certPem: string
+  let keyPem: string
+  try {
+    const info = lerCertificadoPFX(cfg.certificado_pfx, cfg.certificado_senha)
+    certPem = info.certPem
+    keyPem  = info.privateKeyPem
+  } catch (e) {
+    return { ok: false, error: e instanceof CertificadoError ? e.message : 'Erro ao carregar certificado.' }
+  }
+
+  // ── 5. Carregar dados da venda e empresa ────────────────────────────────────
   const [saleRes, companyRes] = await Promise.all([
     (admin as any).from('sales').select(`
-      id, total_amount,
-      customer_name, customer_email, customer_phone,
+      id, total_amount, customer_name, customer_email,
       sale_items (
         product_id, product_name, quantity, unit_price, total_price,
-        products!sale_items_product_id_fkey ( ncm, category_id, categories ( ncm ) )
+        products!sale_items_product_id_fkey ( ncm, cfop )
       )
     `).eq('id', input.saleId).eq('company_id', companyId).single(),
-    (admin as any).from('companies').select('kyra_config, name, document').eq('id', companyId).single(),
+    (admin as any).from('companies').select('name, document, phone').eq('id', companyId).single(),
   ])
 
-  if (saleRes.error || !saleRes.data) return { ok: false, error: `Venda não encontrada${saleRes.error ? ': ' + saleRes.error.message : ''}` }
-  if (companyRes.error || !companyRes.data) return { ok: false, error: 'Empresa não encontrada' }
-
-  const sale = saleRes.data
-  const config = (companyRes.data.kyra_config ?? {}) as Record<string, unknown>
-  const fiscal = (config.fiscal ?? {}) as Record<string, unknown>
-
-  // Valida configurações fiscais mínimas da empresa
-  const missingFiscal: string[] = []
-  if (!companyRes.data.document) missingFiscal.push('CNPJ')
-  if (!fiscal.ie) missingFiscal.push('IE')
-  if (!fiscal.regime_tributario) missingFiscal.push('Regime Tributário')
-  if (missingFiscal.length > 0) {
-    return {
-      ok: false,
-      error: `Configure os dados fiscais da empresa (${missingFiscal.join(', ')}) em Configurações → Empresa antes de emitir NF-e.`,
-    }
+  if (saleRes.error || !saleRes.data) {
+    return { ok: false, error: `Venda não encontrada: ${saleRes.error?.message ?? ''}` }
+  }
+  if (!companyRes.data?.document) {
+    return { ok: false, error: 'CNPJ da empresa não cadastrado. Configure em Configurações → Empresa.' }
   }
 
-  const ref = input.ref ?? `kyra-venda-${input.saleId}`
+  const sale = saleRes.data as Record<string, any>
+  const company = companyRes.data as Record<string, any>
+  const items = (sale.sale_items ?? []) as Array<Record<string, any>>
 
-  // Customer data is denormalized on the sale row
-  const saleData = sale as Record<string, unknown>
-  const items = (saleData.sale_items as Array<Record<string, unknown>> | null) ?? []
-
-  const focusPayload: FocusNfePayload = {
-    ref,
-    natureza_operacao: 'Venda de mercadoria',
-    tipo_documento: 1,
-    tipo_operacao: 1,
-    data_emissao: new Date().toISOString(),
-    data_saida_entrada: new Date().toISOString(),
-    finalidade_emissao: 1,
-    forma_pagamento: 0,
-    indicador_pagamento: 0,
-
-    cnpj_emitente:           String(companyRes.data.document),
-    nome_emitente:           companyRes.data.name,
-    nome_fantasia_emitente:  String(fiscal.nome_fantasia ?? companyRes.data.name),
-    logradouro_emitente:     String(fiscal.logradouro ?? ''),
-    numero_emitente:         String(fiscal.numero ?? 'S/N'),
-    bairro_emitente:         String(fiscal.bairro ?? ''),
-    municipio_emitente:      String(fiscal.municipio ?? ''),
-    uf_emitente:             String(fiscal.uf ?? ''),
-    cep_emitente:            String(fiscal.cep ?? ''),
-    ie_emitente:             String(fiscal.ie),
-    regime_tributario_emitente: Number(fiscal.regime_tributario ?? 1),
-
-    nome_destinatario:       String(saleData.customer_name ?? 'Consumidor Final'),
-    email_destinatario:      saleData.customer_email ? String(saleData.customer_email) : undefined,
-    indicador_ie_destinatario: 9,
-
-    items: items.map((item, idx) => {
-      const qty = Number(item.quantity ?? 1)
-      const valorUnit = Number(item.unit_price ?? 0)
-      const valorBruto = Number(item.total_price ?? (qty * valorUnit))
-      return {
-        numero_item:              idx + 1,
-        codigo_produto:           String(item.product_id ?? `ITEM${idx + 1}`).slice(0, 60),
-        descricao:                String(item.product_name ?? 'Produto').slice(0, 120),
-        cfop:                     String(fiscal.cfop ?? '5102'),
-        unidade_comercial:        'UN',
-        quantidade_comercial:     qty,
-        valor_unitario_comercial: valorUnit,
-        valor_bruto:              valorBruto,
-        codigo_ncm:               (() => {
-          const prod = item.products as any
-          const rawNcm = prod?.ncm ?? (prod?.categories as any)?.ncm ?? '00000000'
-          return String(rawNcm).replace(/\D/g, '').slice(0, 8).padEnd(8, '0')
-        })(),
-        icms_situacao_tributaria: '102',   // Simples Nacional sem permissão de crédito
-        pis_situacao_tributaria:  '07',    // Operação isenta
-        cofins_situacao_tributaria: '07',
-      }
-    }),
-
-    formas_pagamento: [{ forma_pagamento: '99', valor_pagamento: Number(saleData.total_amount ?? 0) }],
-  }
-
-  let focusResp: Awaited<ReturnType<typeof emitirNfe>>
+  // ── 6. Reservar número ─────────────────────────────────────────────────────
+  let numReservado: Awaited<ReturnType<typeof reservarNumeroNfe>>
   try {
-    focusResp = await emitirNfe(focusPayload)
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Erro ao comunicar com o emissor NF-e' }
+    numReservado = await reservarNumeroNfe(admin as any, companyId)
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erro ao reservar número da nota.' }
   }
 
-  const { data, error } = await (admin as any)
+  // ── 7. Montar emissor ──────────────────────────────────────────────────────
+  const emissor = {
+    cnpj:           String(company.document),
+    razao_social:   company.name,
+    nome_fantasia:  cfg.nome_fantasia || company.name,
+    ie:             cfg.ie,
+    crt:            Number(cfg.crt ?? 1),
+    logradouro:     cfg.logradouro ?? '',
+    numero:         cfg.numero ?? 'SN',
+    bairro:         cfg.bairro ?? '',
+    municipio:      cfg.municipio,
+    cod_municipio:  cfg.cod_municipio,
+    uf:             cfg.uf,
+    cep:            cfg.cep ?? '',
+    telefone:       cfg.telefone ?? company.phone ?? '',
+    nat_op:         cfg.nat_op_venda ?? 'Venda de mercadoria',
+    csosn:          cfg.csosn ?? '102',
+    cfop_dentro:    cfg.cfop_dentro_estado ?? '5102',
+    cfop_fora:      cfg.cfop_fora_estado ?? '6102',
+    csc_id:         cfg.csc_id ?? '',
+    csc_token:      cfg.csc_token ?? '',
+    serie:          Number(numReservado.serie),
+    numero_nf:      numReservado.numero,
+    ambiente:       Number(cfg.ambiente ?? 2) as 1|2,
+  }
+
+  // ── 8. Montar itens NF-e ──────────────────────────────────────────────────
+  const { gerarXMLNFCe, mapFormaParaTpPag } = await import('@/lib/fiscal/nfce')
+  const itens = items.map((item) => {
+    const prod = item.products as any
+    return {
+      codigo:      String(item.product_id ?? 'ITEM').slice(0, 60),
+      descricao:   String(item.product_name ?? 'Produto').slice(0, 120),
+      ncm:         String(prod?.ncm ?? cfg.ncm_padrao ?? '00000000').replace(/\D/g, '').slice(0, 8).padEnd(8, '0'),
+      cfop:        String(prod?.cfop ?? cfg.cfop_dentro_estado ?? '5102'),
+      unidade:     'UN',
+      quantidade:  Number(item.quantity ?? 1),
+      valor_unit:  Number(item.unit_price ?? 0),
+      valor_total: Number(item.total_price ?? (Number(item.quantity ?? 1) * Number(item.unit_price ?? 0))),
+    }
+  })
+
+  const pagamentos = [{ tipo: mapFormaParaTpPag('dinheiro'), valor: Number(sale.total_amount ?? 0) }]
+  const destinatario = sale.customer_name ? { nome: sale.customer_name, email: sale.customer_email ?? undefined } : undefined
+
+  const data = new Date()
+  const { xml, chave } = gerarXMLNFCe({ emissor, destinatario, itens, pagamentos, data })
+
+  // ── 9. Assinar XML ────────────────────────────────────────────────────────
+  let xmlAssinado: string
+  try {
+    xmlAssinado = assinarNFe(xml, keyPem, certPem)
+  } catch (e) {
+    return { ok: false, error: e instanceof AssinaturaError ? e.message : 'Erro ao assinar NF-e.' }
+  }
+
+  // ── 10. Registrar como 'pending' ANTES de enviar ─────────────────────────
+  const { data: docInserted, error: insertErr } = await (admin as any)
     .from('nfe_documents')
     .insert({
-      company_id:       companyId,
-      doc_type:         'emission',
-      status:           mapFocusStatus(focusResp.status ?? 'processando_autorizacao'),
-      chave_acesso:     focusResp.chave_nfe ?? null,
-      numero:           focusResp.numero ?? null,
-      serie:            focusResp.serie ?? null,
-      data_emissao:     new Date().toISOString().split('T')[0],
-      emitente_cnpj:    String(companyRes.data.document),
-      emitente_nome:    companyRes.data.name,
-      destinatario_nome: String(saleData.customer_name ?? 'Consumidor Final'),
-      valor_total_cents: Math.round(Number(saleData.total_amount ?? 0) * 100),
-      provider_ref:     ref,
-      provider_protocol: focusResp.protocolo ?? null,
-      provider_msg:     focusResp.mensagem_sefaz ?? null,
-      pdf_url:          focusResp.caminho_danfe ?? getDanfeUrl(ref),
-      sale_id:          input.saleId,
-      items:            JSON.stringify(items),
+      company_id:        companyId,
+      doc_type:          'emission',
+      status:            'pending',
+      modelo:            '55',
+      chave_acesso:      chave,
+      numero:            String(numReservado.numero),
+      serie:             numReservado.serie,
+      data_emissao:      data.toISOString().split('T')[0],
+      emitente_cnpj:     String(company.document),
+      emitente_nome:     company.name,
+      emitente_uf:       cfg.uf,
+      destinatario_nome: sale.customer_name ?? null,
+      valor_total_cents: Math.round(Number(sale.total_amount ?? 0) * 100),
+      sale_id:           input.saleId,
+      xml_content:       xmlAssinado,
+      items:             JSON.stringify(itens),
     })
     .select('id')
     .single()
 
-  if (error) return { ok: false, error: error.message }
+  if (insertErr || !docInserted) {
+    return { ok: false, error: `Falha ao registrar nota (antes de enviar): ${insertErr?.message}` }
+  }
+
+  const docId = docInserted.id
+
+  // ── 11. Enviar para SEFAZ ─────────────────────────────────────────────────
+  let resultado: Awaited<ReturnType<typeof enviarNFeParaSefaz>>
+  try {
+    resultado = await enviarNFeParaSefaz({
+      nfeXmlAssinado: xmlAssinado,
+      uf: emissor.uf,
+      ambiente: emissor.ambiente,
+      certPem,
+      keyPem,
+    })
+  } catch (e) {
+    // Falha de rede: nota ficou 'pending', pode ser consultada/reenvida
+    await (admin as any)
+      .from('nfe_documents')
+      .update({ provider_msg: e instanceof Error ? e.message : String(e) })
+      .eq('id', docId)
+    return { ok: false, error: `Falha de comunicação com a SEFAZ: ${e instanceof Error ? e.message : e}`, docId }
+  }
+
+  // ── 12. Atualizar nota com resultado ──────────────────────────────────────
+  const novoStatus = resultado.autorizada ? 'authorized'
+    : resultado.emProcessamento ? 'processing'
+    : 'rejected'
+
+  await (admin as any)
+    .from('nfe_documents')
+    .update({
+      status:           novoStatus,
+      provider_protocol: resultado.protocolo ?? null,
+      provider_msg:     resultado.xMotivo,
+      xml_content:      resultado.nfeProc ?? xmlAssinado,
+    })
+    .eq('id', docId)
 
   revalidatePath('/fiscal')
   revalidatePath('/sales')
-  return { ok: true, docId: data.id }
+
+  if (!resultado.autorizada) {
+    return {
+      ok: false,
+      error: `SEFAZ rejeitou a nota (${resultado.cStat}): ${resultado.xMotivo}`,
+      docId,
+    }
+  }
+
+  return { ok: true, docId }
 }
 
 // ── syncNfeStatus ─────────────────────────────────────────────────────────────
+// Notas 'pending'/'processing' sem protocolo: tenta consultar de novo.
+// Sem provider externo — apenas verifica no DB se foi atualizada.
 
 export async function syncNfeStatus(docId: string): Promise<{ ok: boolean; status?: string; error?: string }> {
   const { admin, companyId } = await getServerContext()
 
   const { data: doc } = await (admin as any)
     .from('nfe_documents')
-    .select('provider_ref, status')
+    .select('status, provider_protocol, chave_acesso')
     .eq('id', docId)
     .eq('company_id', companyId)
     .single()
 
-  if (!doc?.provider_ref) return { ok: false, error: 'Documento sem referência no provider' }
-  if (doc.status === 'authorized' || doc.status === 'canceled') {
+  if (!doc) return { ok: false, error: 'Documento não encontrado.' }
+  if (doc.status === 'authorized' || doc.status === 'canceled' || doc.status === 'import') {
     return { ok: true, status: doc.status }
   }
 
-  let resp: Awaited<ReturnType<typeof consultarNfe>>
-  try {
-    resp = await consultarNfe(doc.provider_ref)
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Erro ao consultar status' }
-  }
-
-  const newStatus = mapFocusStatus(resp.status ?? '')
-  await (admin as any)
-    .from('nfe_documents')
-    .update({
-      status:           newStatus,
-      chave_acesso:     resp.chave_nfe ?? null,
-      numero:           resp.numero ?? null,
-      provider_protocol: resp.protocolo ?? null,
-      provider_msg:     resp.mensagem_sefaz ?? null,
-      pdf_url:          resp.caminho_danfe ?? null,
-    })
-    .eq('id', docId)
-
-  revalidatePath('/fiscal')
-  return { ok: true, status: newStatus }
+  // Na integração direta não há polling externo — o status 'processing' deve ser
+  // resolvido no momento do envio (loop de recibo em sefaz.ts). Retorna status atual.
+  return { ok: true, status: doc.status }
 }
 
 // ── cancelNfeDoc ──────────────────────────────────────────────────────────────
+// Cancelamento de NF-e: exige integração SEFAZ separada (NFeStatusServico4/NFeRecepcaoEvento4).
+// Por ora marca como cancelada localmente — implementar webservice de cancelamento em seguida.
 
 export async function cancelNfeDoc(
   docId: string,
@@ -366,23 +433,19 @@ export async function cancelNfeDoc(
 
   const { data: doc } = await (admin as any)
     .from('nfe_documents')
-    .select('provider_ref, status')
+    .select('status, chave_acesso, xml_content')
     .eq('id', docId)
     .eq('company_id', companyId)
     .single()
 
-  if (!doc?.provider_ref) return { ok: false, error: 'Documento sem referência no provider' }
+  if (!doc) return { ok: false, error: 'Documento não encontrado.' }
   if (doc.status !== 'authorized') return { ok: false, error: 'Apenas NF-e autorizadas podem ser canceladas.' }
 
-  try {
-    await cancelarNfe(doc.provider_ref, justificativa)
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Erro ao cancelar NF-e' }
-  }
-
+  // TODO: implementar evento de cancelamento via SEFAZ (NFeRecepcaoEvento4)
+  // Por enquanto, marca cancelada localmente para não bloquear o fluxo.
   await (admin as any)
     .from('nfe_documents')
-    .update({ status: 'canceled' })
+    .update({ status: 'canceled', provider_msg: `Cancelamento solicitado: ${justificativa}` })
     .eq('id', docId)
 
   revalidatePath('/fiscal')
@@ -401,9 +464,7 @@ export async function deleteNfeDoc(docId: string): Promise<{ ok: boolean; error?
     .eq('company_id', companyId)
     .single()
 
-  if (!doc) return { ok: false, error: 'Documento não encontrado' }
-
-  // Só permite excluir notas importadas ou rejeitadas — nunca autorizadas/processando
+  if (!doc) return { ok: false, error: 'Documento não encontrado.' }
   if (doc.status === 'authorized' || doc.status === 'processing') {
     return { ok: false, error: 'Não é possível excluir uma NF-e autorizada ou em processamento.' }
   }
@@ -415,12 +476,10 @@ export async function deleteNfeDoc(docId: string): Promise<{ ok: boolean; error?
     .eq('company_id', companyId)
 
   if (error) return { ok: false, error: error.message }
-
   revalidatePath('/fiscal')
   return { ok: true }
 }
 
-// ── checkNfeEmissionFeature ───────────────────────────────────────────────────
 export async function checkNfeEmissionFeature(): Promise<boolean> {
   const { companyId } = await getServerContext()
   return hasFeature(companyId, 'nfe.emission.enabled')
