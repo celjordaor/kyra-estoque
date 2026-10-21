@@ -39,7 +39,7 @@ export async function getConversations(limit = 30): Promise<ConversationSummary[
 
   if (!data) return []
 
-  return data.map(row => {
+  return data.map((row: any) => {
     const msgs = (row.messages as { role: string; content: string }[]) ?? []
     const userMsgs = msgs.filter(m => m.role === 'user')
     const preview = userMsgs[0]?.content?.slice(0, 120) ?? ''
