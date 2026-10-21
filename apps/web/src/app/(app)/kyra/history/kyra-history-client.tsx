@@ -56,7 +56,7 @@ export function KyraHistoryClient({ conversations: initial }: Props) {
       groups.push({ label, items: [] })
       lastLabel = label
     }
-    groups[groups.length - 1].items.push(conv)
+    groups[groups.length - 1]!.items.push(conv)
   }
 
   return (
