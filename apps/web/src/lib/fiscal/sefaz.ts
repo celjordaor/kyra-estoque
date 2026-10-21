@@ -65,7 +65,7 @@ export interface EnvioResultado {
 
 function extrairTag(xml: string, tag: string): string | null {
   const m = xml.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([^<]*)</${tag}>`))
-  return m ? m[1] : null
+  return m ? (m[1] ?? null) : null
 }
 
 function montarEnvelope(nfeDadosMsgConteudo: string, wsdlNamespace: string): string {
@@ -140,7 +140,7 @@ export function interpretarResposta(respostaXml: string): EnvioResultado {
     return { autorizada: false, cStat: cStatLote, xMotivo: xMotivoLote }
   }
 
-  const infProt = protNFeMatch[1]
+  const infProt = protNFeMatch[1] ?? ''
   const cStat = extrairTag(infProt, 'cStat') ?? ''
   const xMotivo = extrairTag(infProt, 'xMotivo') ?? ''
   const nProt = extrairTag(infProt, 'nProt') ?? undefined
