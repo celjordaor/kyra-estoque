@@ -68,7 +68,7 @@ export class LojaIntegradaAdapter implements ChannelAdapter {
 
   async fetchOrders(since?: Date): Promise<ExternalOrder[]> {
     const sinceParam = since
-      ? `&data_criacao__gte=${since.toISOString().split('T')[0]}`
+      ? `&data_criacao__gte=${(since.toISOString().split('T')[0] ?? since.toISOString().slice(0, 10))}`
       : ''
     const data = await this.liFetch<LIOrdersResponse>(
       `/pedido/?limit=100&ordene_por=-numero${sinceParam}`,

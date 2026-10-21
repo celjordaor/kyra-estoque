@@ -307,7 +307,7 @@ export async function inviteMember(
         id: userId,
         company_id: companyId,
         email,
-        full_name: existingAuthUser?.user_metadata?.full_name ?? email.split('@')[0],
+        full_name: existingAuthUser?.user_metadata?.full_name ?? (email.split('@')[0] ?? email),
         role: role as any,
         is_active: !!existingAuthUser,
       },

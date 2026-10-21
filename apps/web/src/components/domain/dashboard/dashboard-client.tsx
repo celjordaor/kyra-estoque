@@ -25,7 +25,7 @@ interface DashboardClientProps {
 function greeting(name: string) {
   const hour = new Date().getHours()
   const part = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
-  const first = name.split(' ')[0]
+  const first = name.split(' ')[0] ?? name
   return `${part}, ${first} 👋`
 }
 

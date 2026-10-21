@@ -326,7 +326,7 @@ export async function emitNfe(input: EmitNfeInput): Promise<{ ok: boolean; error
       chave_acesso:      chave,
       numero:            String(numReservado.numero),
       serie:             numReservado.serie,
-      data_emissao:      data.toISOString().split('T')[0],
+      data_emissao:      (data.toISOString().split('T')[0] ?? data.toISOString().slice(0, 10)),
       emitente_cnpj:     String(company.document),
       emitente_nome:     company.name,
       emitente_uf:       cfg.uf,

@@ -227,7 +227,7 @@ export function KyraPage() {
       if (!conv) return
       setMessages(conv.messages.map(m => ({
         id: crypto.randomUUID(),
-        role: m.role,
+        role: m.role === 'assistant' ? 'kyra' : 'user',
         text: m.content,
         ts: new Date(),
       })))
