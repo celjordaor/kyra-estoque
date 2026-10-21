@@ -183,11 +183,7 @@ export function FiscalConfigForm({ onSaved }: FiscalConfigFormProps) {
             <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
             <div className="flex-1 text-sm">
               <p className="font-medium text-success">Certificado configurado</p>
-              {null && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Válido até {fmtDate(null)}
-                </p>
-              )}
+
             </div>
           </div>
         )}
