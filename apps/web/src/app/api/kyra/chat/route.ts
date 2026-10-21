@@ -143,9 +143,7 @@ export async function POST(req: NextRequest) {
     const textContent = finalResponse.content
       .filter(b => b.type === 'text')
       .map(b => (b as Anthropic.TextBlock).text)
-      .join('
-
-')
+      .join('\n')
 
     // ── 9. Persistir conversa em ai_conversations ───────────
     const persistMessages = [
