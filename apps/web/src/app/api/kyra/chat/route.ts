@@ -162,13 +162,13 @@ export async function POST(req: NextRequest) {
     let conversationId = incomingConversationId
     try {
       if (incomingConversationId) {
-        await admin.from('ai_conversations').update({
+        await (admin as any).from('ai_conversations').update({
           messages: persistMessages,
           token_count: totalTokens,
           updated_at: new Date().toISOString(),
         }).eq('id', incomingConversationId).eq('company_id', companyId)
       } else {
-        const { data: conv } = await admin.from('ai_conversations').insert({
+        const { data: conv } = await (admin as any).from('ai_conversations').insert({
           company_id: companyId,
           user_id: user.id,
           title,
