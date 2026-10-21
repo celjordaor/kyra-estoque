@@ -104,7 +104,7 @@ export function FiscalConfigForm({ onSaved }: FiscalConfigFormProps) {
     const reader = new FileReader()
     reader.onload = e => {
       const result = e.target?.result as string
-      const base64 = result.includes(',') ? result.split(',')[1] : result
+      const base64 = result.includes(',') ? (result.split(',')[1] ?? result) : result
       setForm(prev => prev ? { ...prev, pfxBase64: base64 } : prev)
       setPfxFileName(file.name)
     }
