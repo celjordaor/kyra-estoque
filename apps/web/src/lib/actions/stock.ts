@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { completeCheckpoint } from '@/lib/actions/onboarding'
+import { createNotification } from '@/lib/actions/notifications'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 
@@ -185,7 +186,7 @@ export async function createStockMovement(values: {
     // Get current stock
     const { data: product, error: prodError } = await (supabase as any)
       .from('products')
-      .select('id, stock_quantity, cost_price')
+      .select('id, name, stock_quantity, cost_price, min_stock')
       .eq('id', values.product_id)
       .eq('company_id', companyId)
       .single()
@@ -215,6 +216,18 @@ export async function createStockMovement(values: {
     revalidatePath('/stock')
     // D3: estoque_configurado — silencioso
     completeCheckpoint(companyId, 'estoque_configurado').catch(() => {})
+    // Stock alert notification when stock drops below min_stock
+    const minStock = (product.min_stock ?? 0) as number
+    if (delta < 0 && newQty <= minStock && minStock > 0) {
+      createNotification({
+        companyId,
+        type: 'stock_alert',
+        title: `Estoque baixo: ${product.name as string}`,
+        body: `Estoque atual (${newQty}) atingiu o mínimo configurado (${minStock}). Considere reabastecer.`,
+        actionUrl: '/stock',
+        metadata: { product_id: values.product_id, current_qty: newQty, min_stock: minStock },
+      }).catch(() => {})
+    }
     return { success: true }
   } catch (e) {
     return { success: false, error: String(e) }

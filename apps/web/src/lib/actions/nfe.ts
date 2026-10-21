@@ -47,6 +47,7 @@ export interface NfeDocument {
   destinatarioNome: string | null
   valorTotalCents: number | null
   status: string
+  modelo: string | null
   pdfUrl: string | null
   saleId: string | null
   purchaseId: string | null
@@ -62,6 +63,7 @@ export interface EmitNfeInput {
 export async function getNfeDocuments(filter?: {
   docType?: 'import' | 'emission'
   status?: string
+  modelo?: '55' | '65'
   limit?: number
 }): Promise<{ docs: NfeDocument[]; hasFeatureImport: boolean; hasFeatureEmission: boolean }> {
   const { admin, companyId } = await getServerContext()
@@ -74,7 +76,7 @@ export async function getNfeDocuments(filter?: {
   let query = (admin as any)
     .from('nfe_documents')
     .select(`
-      id, doc_type, chave_acesso, numero, serie, data_emissao,
+      id, doc_type, modelo, chave_acesso, numero, serie, data_emissao,
       emitente_cnpj, emitente_nome, destinatario_cnpj, destinatario_nome,
       valor_total_cents, status, pdf_url, sale_id, purchase_id, created_at
     `)
@@ -83,6 +85,7 @@ export async function getNfeDocuments(filter?: {
 
   if (filter?.docType) query = query.eq('doc_type', filter.docType)
   if (filter?.status)  query = query.eq('status', filter.status)
+  if (filter?.modelo)  query = query.eq('modelo', filter.modelo)
   query = query.limit(filter?.limit ?? 100)
 
   const { data } = await query
@@ -90,6 +93,7 @@ export async function getNfeDocuments(filter?: {
   const docs: NfeDocument[] = (data ?? []).map((d: any) => ({
     id:               d.id,
     docType:          d.doc_type as 'import'|'emission',
+    modelo:           d.modelo ?? null,
     chaveAcesso:      d.chave_acesso,
     numero:           d.numero,
     serie:            d.serie,

@@ -1,6 +1,7 @@
 'use server'
 
 import { completeCheckpoint } from '@/lib/actions/onboarding'
+import { createNotification } from '@/lib/actions/notifications'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 
@@ -430,6 +431,17 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
 
   // D5: primeira_venda — silencioso
   completeCheckpoint(companyId, 'primeira_venda').catch(() => {})
+  // Notificação in-app de pedido recebido (fire-and-forget)
+  createNotification({
+    companyId,
+    type: 'order_received',
+    title: 'Nova venda registrada',
+    body: input.customer_name
+      ? `Venda para ${input.customer_name} — R$ ${total_amount.toFixed(2).replace('.', ',')}`
+      : `Venda de R$ ${total_amount.toFixed(2).replace('.', ',')} finalizada`,
+    actionUrl: `/sales/${sale.id}`,
+    metadata: { sale_id: sale.id, sale_number: sale.sale_number },
+  }).catch(() => {})
   return { id: sale.id, sale_number: sale.sale_number }
 }
 

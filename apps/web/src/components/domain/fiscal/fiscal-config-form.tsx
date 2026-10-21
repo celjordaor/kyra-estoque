@@ -1,11 +1,9 @@
 'use client'
 // apps/web/src/components/domain/fiscal/fiscal-config-form.tsx
-// Somente campos exclusivos do módulo fiscal.
-// Dados da empresa (IE, CRT, CNAE, CFOP, endereço) → Configurações → Empresa.
+// Configurações fiscais completas: certificado A1, dados do emitente, ambiente SEFAZ.
 
 import * as React from 'react'
-import { Upload, ShieldCheck, AlertTriangle, CheckCircle2, RefreshCw, Save, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
+import { Upload, ShieldCheck, AlertTriangle, CheckCircle2, RefreshCw, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -32,6 +30,24 @@ function fmtDate(iso: string | null | undefined) {
 // ── Estado do form ────────────────────────────────────────────────────────────
 
 type FormState = {
+  // Dados do emitente
+  ie: string
+  im: string
+  nome_fantasia: string
+  crt: '1' | '3'
+  logradouro: string
+  numero: string
+  complemento: string
+  bairro: string
+  municipio: string
+  uf: string
+  cep: string
+  cod_municipio: string
+  telefone: string
+  cnae: string
+  cfop_dentro_estado: string
+  cfop_fora_estado: string
+  // Configurações de emissão
   ambiente: '1' | '2'
   nat_op_venda: string
   csosn: string
@@ -47,6 +63,24 @@ type FormState = {
 
 function dtoToForm(dto: FiscalConfigDTO): FormState {
   return {
+    // Emitente
+    ie: dto.ie ?? '',
+    im: dto.im ?? '',
+    nome_fantasia: dto.nome_fantasia ?? '',
+    crt: String(dto.crt ?? 1) as '1' | '3',
+    logradouro: dto.logradouro ?? '',
+    numero: dto.numero ?? '',
+    complemento: dto.complemento ?? '',
+    bairro: dto.bairro ?? '',
+    municipio: dto.municipio ?? '',
+    uf: dto.uf ?? '',
+    cep: dto.cep ?? '',
+    cod_municipio: dto.cod_municipio ?? '',
+    telefone: dto.telefone ?? '',
+    cnae: dto.cnae ?? '',
+    cfop_dentro_estado: dto.cfop_dentro_estado ?? '5102',
+    cfop_fora_estado: dto.cfop_fora_estado ?? '6102',
+    // Emissão
     ambiente: String(dto.ambiente) as '1' | '2',
     nat_op_venda: dto.nat_op_venda,
     csosn: dto.csosn,
@@ -117,6 +151,24 @@ export function FiscalConfigForm({ onSaved }: FiscalConfigFormProps) {
     setSaving(true)
 
     const payload: Record<string, unknown> = {
+      // Emitente
+      ie: form.ie || null,
+      im: form.im || null,
+      nome_fantasia: form.nome_fantasia || null,
+      crt: Number(form.crt),
+      logradouro: form.logradouro || null,
+      numero: form.numero || null,
+      complemento: form.complemento || null,
+      bairro: form.bairro || null,
+      municipio: form.municipio || null,
+      uf: form.uf || null,
+      cep: form.cep || null,
+      cod_municipio: form.cod_municipio || null,
+      telefone: form.telefone || null,
+      cnae: form.cnae || null,
+      cfop_dentro_estado: form.cfop_dentro_estado || '5102',
+      cfop_fora_estado: form.cfop_fora_estado || '6102',
+      // Emissão
       ambiente: Number(form.ambiente),
       nat_op_venda: form.nat_op_venda,
       csosn: form.csosn,
@@ -158,20 +210,90 @@ export function FiscalConfigForm({ onSaved }: FiscalConfigFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 max-w-3xl">
 
-      {/* ── Aviso: dados da empresa já em Configurações ────────────────── */}
-      <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
-        <p className="text-sm text-muted-foreground">
-          <strong className="text-foreground">IE, CRT, CNAE, CFOP e endereço fiscal</strong> são configurados em{' '}
-          <strong className="text-foreground">Configurações → Empresa</strong>.
-        </p>
-        <Link
-          href="/settings?section=fiscal"
-          className="inline-flex items-center gap-1 text-sm text-primary hover:underline shrink-0 ml-4"
-        >
-          Ir para Configurações
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
+
+
+      {/* ── Dados do Emitente ───────────────────────────────────────────── */}
+      <section>
+        <SectionTitle>Dados do Emitente (NF-e)</SectionTitle>
+        <Row className="grid-cols-1 md:grid-cols-2">
+          <FormField id="ie" label="Inscrição Estadual (IE) *" hint="Obrigatório para emitir NF-e. Use ISENTO se aplicável.">
+            <Input id="ie" placeholder="Ex: 123456789012 ou ISENTO" value={form.ie} onChange={e => set('ie', e.target.value)} />
+          </FormField>
+          <FormField id="im" label="Inscrição Municipal (IM)" hint="Obrigatório para NFS-e (serviços)">
+            <Input id="im" placeholder="Opcional" value={form.im} onChange={e => set('im', e.target.value)} />
+          </FormField>
+        </Row>
+        <Row className="grid-cols-1 md:grid-cols-2 mt-4">
+          <FormField id="nome_fantasia" label="Nome Fantasia">
+            <Input id="nome_fantasia" placeholder="Nome fantasia (opcional)" value={form.nome_fantasia} onChange={e => set('nome_fantasia', e.target.value)} />
+          </FormField>
+          <FormField id="crt" label="Regime Tributário (CRT) *">
+            <select
+              id="crt"
+              value={form.crt}
+              onChange={e => set('crt', e.target.value as '1' | '3')}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="1">1 — Simples Nacional</option>
+              <option value="3">3 — Lucro Real / Presumido</option>
+            </select>
+          </FormField>
+        </Row>
+        <Row className="grid-cols-1 md:grid-cols-3 mt-4">
+          <FormField id="logradouro" label="Logradouro *" hint="Nome da rua / avenida">
+            <Input id="logradouro" placeholder="Rua das Flores" value={form.logradouro} onChange={e => set('logradouro', e.target.value)} />
+          </FormField>
+          <FormField id="numero" label="Número *">
+            <Input id="numero" placeholder="100" value={form.numero} onChange={e => set('numero', e.target.value)} />
+          </FormField>
+          <FormField id="complemento" label="Complemento">
+            <Input id="complemento" placeholder="Sala 1 (opcional)" value={form.complemento} onChange={e => set('complemento', e.target.value)} />
+          </FormField>
+        </Row>
+        <Row className="grid-cols-1 md:grid-cols-3 mt-4">
+          <FormField id="bairro" label="Bairro *">
+            <Input id="bairro" placeholder="Centro" value={form.bairro} onChange={e => set('bairro', e.target.value)} />
+          </FormField>
+          <FormField id="municipio" label="Município *">
+            <Input id="municipio" placeholder="São Paulo" value={form.municipio} onChange={e => set('municipio', e.target.value)} />
+          </FormField>
+          <FormField id="uf" label="UF *">
+            <select
+              id="uf"
+              value={form.uf}
+              onChange={e => set('uf', e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">Selecione…</option>
+              {['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(uf => (
+                <option key={uf} value={uf}>{uf}</option>
+              ))}
+            </select>
+          </FormField>
+        </Row>
+        <Row className="grid-cols-1 md:grid-cols-3 mt-4">
+          <FormField id="cep" label="CEP *">
+            <Input id="cep" placeholder="01310-100" value={form.cep} onChange={e => set('cep', e.target.value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2'))} maxLength={9} />
+          </FormField>
+          <FormField id="cod_municipio" label="Código IBGE do Município *" hint="7 dígitos — consulte ibge.gov.br">
+            <Input id="cod_municipio" placeholder="3550308" value={form.cod_municipio} onChange={e => set('cod_municipio', e.target.value.replace(/\D/g, '').slice(0, 7))} maxLength={7} />
+          </FormField>
+          <FormField id="telefone" label="Telefone">
+            <Input id="telefone" placeholder="11999999999" value={form.telefone} onChange={e => set('telefone', e.target.value.replace(/\D/g, '').slice(0, 11))} maxLength={11} />
+          </FormField>
+        </Row>
+        <Row className="grid-cols-1 md:grid-cols-3 mt-4">
+          <FormField id="cfop_dentro_estado" label="CFOP dentro do estado" hint="Padrão: 5102">
+            <Input id="cfop_dentro_estado" placeholder="5102" value={form.cfop_dentro_estado} onChange={e => set('cfop_dentro_estado', e.target.value)} />
+          </FormField>
+          <FormField id="cfop_fora_estado" label="CFOP fora do estado" hint="Padrão: 6102">
+            <Input id="cfop_fora_estado" placeholder="6102" value={form.cfop_fora_estado} onChange={e => set('cfop_fora_estado', e.target.value)} />
+          </FormField>
+          <FormField id="cnae" label="CNAE" hint="Opcional">
+            <Input id="cnae" placeholder="4751201" value={form.cnae} onChange={e => set('cnae', e.target.value.replace(/\D/g, '').slice(0, 7))} maxLength={7} />
+          </FormField>
+        </Row>
+      </section>
 
       {/* ── Certificado Digital ─────────────────────────────────────────── */}
       <section>

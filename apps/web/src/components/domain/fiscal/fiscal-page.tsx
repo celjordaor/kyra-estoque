@@ -9,9 +9,11 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
-  getNfeDocuments, importXml, syncNfeStatus, cancelNfeDoc, deleteNfeDoc,
+  getNfeDocuments, importXml, syncNfeStatus, cancelNfeDoc, deleteNfeDoc, emitNfe,
 } from '@/lib/actions/nfe'
 import type { NfeDocument } from '@/lib/actions/nfe'
+import { getSales } from '@/lib/actions/sales'
+import type { Sale } from '@/lib/actions/sales'
 import { getFiscalConfig } from '@/lib/actions/fiscal-config'
 import type { FiscalConfigDTO } from '@/lib/actions/fiscal-config'
 import { FiscalConfigForm } from '@/components/domain/fiscal/fiscal-config-form'
@@ -80,9 +82,167 @@ function UpgradeNotice({ feature }: { feature: string }) {
   )
 }
 
+
+// ── EmitNfeModal ──────────────────────────────────────────────────────────────
+
+function EmitNfeModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [sales, setSales] = React.useState<Sale[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [selected, setSelected] = React.useState<string | null>(null)
+  const [emitting, setEmitting] = React.useState(false)
+  const [search, setSearch] = React.useState('')
+
+  React.useEffect(() => {
+    getSales({ status: 'COMPLETED', per_page: 50 }).then(r => {
+      setSales(r.data); setLoading(false)
+    })
+  }, [])
+
+  const filtered = sales.filter(s =>
+    !search || (s.customer_name ?? s.sale_number).toLowerCase().includes(search.toLowerCase())
+  )
+
+  const handleEmit = async () => {
+    if (!selected) return
+    setEmitting(true)
+    const r = await emitNfe({ saleId: selected })
+    setEmitting(false)
+    if (r.ok) {
+      toast.success(`NF-e enviada para SEFAZ. ID: ${r.docId ?? ''}`)
+      onSuccess()
+      onClose()
+    } else {
+      toast.error(r.error ?? 'Erro ao emitir NF-e')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-card border rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Emitir NF-e</h2>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+        <p className="text-sm text-muted-foreground">Selecione uma venda concluída para gerar a NF-e.</p>
+        <input
+          type="text"
+          placeholder="Buscar venda ou cliente…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <div className="rounded-lg border overflow-hidden max-h-56 overflow-y-auto">
+          {loading ? (
+            <div className="flex flex-col gap-2 p-3">
+              {[1,2,3].map(i => <div key={i} className="h-10 bg-muted animate-pulse rounded" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">Nenhuma venda encontrada</div>
+          ) : filtered.map(s => (
+            <button
+              key={s.id}
+              onClick={() => setSelected(s.id)}
+              className={cn(
+                'flex w-full items-center justify-between px-4 py-3 text-left border-b last:border-0 hover:bg-muted/50 transition-colors',
+                selected === s.id && 'bg-primary/10 border-primary/30'
+              )}
+            >
+              <div>
+                <p className="text-sm font-medium">{s.customer_name ?? 'Sem cliente'}</p>
+                <p className="text-xs text-muted-foreground">Venda {s.sale_number} · {new Date(s.created_at).toLocaleDateString('pt-BR')}</p>
+              </div>
+              <span className="text-sm font-semibold">
+                {s.total_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={emitting}>Cancelar</Button>
+          <Button disabled={!selected || emitting} onClick={handleEmit}>
+            {emitting ? 'Emitindo…' : 'Emitir NF-e'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── NfceTab ───────────────────────────────────────────────────────────────────
+
+function NfceTab({ hasFeature }: { hasFeature: boolean }) {
+  const [docs, setDocs] = React.useState<NfeDocument[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  const load = React.useCallback(async () => {
+    setLoading(true)
+    // NFC-e usa modelo='65' — filtramos pelo tipo 'emission' e depois pelo modelo no campo
+    const res = await getNfeDocuments({ docType: 'emission', modelo: '65', limit: 100 })
+    setDocs(res.docs); setLoading(false)
+  }, [])
+
+  React.useEffect(() => { load() }, [load])
+
+  if (!hasFeature) return <UpgradeNotice feature="Emissão de NFC-e" />
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold">Cupons Fiscais (NFC-e)</p>
+          <p className="text-xs text-muted-foreground">Documentos emitidos pelo PDV</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+          <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', loading && 'animate-spin')} />Atualizar
+        </Button>
+      </div>
+      <div className="rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                {['Nº / Série','Chave de Acesso','Emissão','Cliente','Valor','Status','DANFE'].map(h => (
+                  <th key={h} className={cn('px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide', h === 'Valor' || h === 'DANFE' ? 'text-right' : 'text-left')}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            {loading ? <SkeletonRows cols={7} /> : (
+              <tbody>
+                {docs.length === 0 && (
+                  <tr><td colSpan={7} className="px-3 py-16 text-center text-muted-foreground text-sm">
+                    <ReceiptText className="h-8 w-8 mx-auto mb-2 opacity-30" />Nenhum cupom fiscal emitido
+                  </td></tr>
+                )}
+                {docs.map(doc => (
+                  <tr key={doc.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="px-3 py-2.5 font-mono text-xs">{doc.numero ? `${doc.numero}/${doc.serie}` : '—'}</td>
+                    <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground" title={doc.chaveAcesso ?? ''}>{fmtChave(doc.chaveAcesso)}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{fmtDate(doc.dataEmissao)}</td>
+                    <td className="px-3 py-2.5 text-xs">{doc.destinatarioNome ?? <span className="text-muted-foreground">—</span>}</td>
+                    <td className="px-3 py-2.5 text-right font-medium">{fmt(doc.valorTotalCents)}</td>
+                    <td className="px-3 py-2.5"><NfeStatusBadge status={doc.status} /></td>
+                    <td className="px-3 py-2.5 text-right">
+                      {doc.pdfUrl
+                        ? <a href={doc.pdfUrl} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7"><Download className="h-3.5 w-3.5" /></Button></a>
+                        : <span className="text-xs text-muted-foreground">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </div>
+      </div>
+      <div className="rounded-lg border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+        <strong className="text-foreground">NFC-e:</strong> Cupons gerados automaticamente ao finalizar uma venda no PDV. Para emitir manualmente, use o módulo PDV.
+      </div>
+    </div>
+  )
+}
+
 // ── DocsTab ───────────────────────────────────────────────────────────────────
 
-function DocsTab({ hasFeature, docType }: { hasFeature: boolean; docType?: 'emission' | 'import' }) {
+function DocsTab({ hasFeature, docType, onEmit }: { hasFeature: boolean; docType?: 'emission' | 'import'; onEmit?: () => void }) {
   const [docs, setDocs] = React.useState<NfeDocument[]>([])
   const [loading, setLoading] = React.useState(true)
   const [syncing, setSyncing] = React.useState<string | null>(null)
@@ -93,7 +253,7 @@ function DocsTab({ hasFeature, docType }: { hasFeature: boolean; docType?: 'emis
 
   const load = React.useCallback(async () => {
     setLoading(true)
-    const res = await getNfeDocuments({ docType })
+    const res = await getNfeDocuments({ docType, modelo: docType === 'emission' ? '55' : undefined })
     setDocs(res.docs); setLoading(false)
   }, [docType])
 
@@ -103,10 +263,18 @@ function DocsTab({ hasFeature, docType }: { hasFeature: boolean; docType?: 'emis
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', loading && 'animate-spin')} />Atualizar
-        </Button>
+      <div className="flex items-center justify-between">
+        <div />
+        <div className="flex gap-2">
+          {onEmit && (
+            <Button size="sm" onClick={onEmit}>
+              <FileText className="h-3.5 w-3.5 mr-1.5" />Emitir nova NF-e
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', loading && 'animate-spin')} />Atualizar
+          </Button>
+        </div>
       </div>
       <div className="rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
@@ -400,7 +568,32 @@ function Dashboard({ config, hasImport, hasEmission, onNavigate }: {
   )
 }
 
+// ── NfeTabWithEmit ────────────────────────────────────────────────────────────
+
+function NfeTabWithEmit({ hasEmission, hasImport }: { hasEmission: boolean; hasImport: boolean }) {
+  const [showEmit, setShowEmit] = React.useState(false)
+  const [reloadKey, setReloadKey] = React.useState(0)
+  return (
+    <>
+      <DocsTab
+        key={reloadKey}
+        hasFeature={hasImport || hasEmission}
+        docType="emission"
+        onEmit={hasEmission ? () => setShowEmit(true) : undefined}
+      />
+      {showEmit && (
+        <EmitNfeModal
+          onClose={() => setShowEmit(false)}
+          onSuccess={() => setReloadKey(k => k + 1)}
+        />
+      )}
+    </>
+  )
+}
+
 // ── Página principal ──────────────────────────────────────────────────────────
+
+
 
 export function FiscalPage() {
   const [view, setView] = React.useState<View>('dashboard')
@@ -439,8 +632,8 @@ export function FiscalPage() {
         <span className="text-sm font-semibold text-foreground">{labels[view]}</span>
       </div>
       <div className="px-6 pb-6">
-        {view === 'nfe'      && <DocsTab hasFeature={hasImport || hasEmission} docType="emission" />}
-        {view === 'nfce'     && <DocsTab hasFeature={hasEmission} docType="emission" />}
+        {view === 'nfe'      && <NfeTabWithEmit hasEmission={hasEmission} hasImport={hasImport} />}
+        {view === 'nfce'     && <NfceTab hasFeature={hasEmission} />}
         {view === 'entradas' && <ImportTab hasFeature={hasImport} />}
         {view === 'config'   && <FiscalConfigForm onSaved={() => { getFiscalConfig().then(r => { if (r.ok && r.config) setConfig(r.config) }) }} />}
       </div>

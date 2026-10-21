@@ -22,12 +22,11 @@ import { Switch } from '@/components/ui/switch'
 import { PageHeader } from '@/components/layout/page-header'
 import { cn } from '@/lib/utils'
 import { CepInput } from '@/components/ui/cep-input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatPhone, formatCnpj, isValidCnpj, isValidEmail } from '@/lib/formatters'
 import { getCategoriesAdmin, createCategory, updateCategory, deleteCategory } from '@/lib/actions/categories'
 import { getBrands, createBrand, updateBrand, deleteBrand } from '@/lib/actions/brands'
 import { getCoupons, createCoupon, updateCoupon, deleteCoupon } from '@/lib/actions/coupons'
-import { getCompanySettings, updateCompanyProfile, updateOperationSettings, uploadCompanyLogo, getFiscalConfig, updateFiscalConfig, type FiscalConfig } from '@/lib/actions/settings'
+import { getCompanySettings, updateCompanyProfile, updateOperationSettings, uploadCompanyLogo } from '@/lib/actions/settings'
 import { getSubscriptionInfo, getInvoiceHistory, getBillingPortalUrl, type SubscriptionInfo, type InvoiceItem } from '@/lib/actions/billing'
 import {
   getTeamMembers, updateMemberRole, removeMember, inviteMember,
@@ -1484,16 +1483,9 @@ function CompanySection() {
   const [logoFile, setLogoFile] = React.useState<File | null>(null)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
 
-  // fiscal
-  const [ie, setIe] = React.useState('')
-  const [im, setIm] = React.useState('')
-  const [regimeTributario, setRegimeTributario] = React.useState<string>('')
-  const [cnae, setCnae] = React.useState('')
-  const [cfop, setCfop] = React.useState('')
-  const [fiscalAddr, setFiscalAddr] = React.useState({ street: '', number: '', complement: '', neighborhood: '', city: '', state: '', cep: '' })
 
   React.useEffect(() => {
-    Promise.all([getCompanySettings(), getFiscalConfig()]).then(([s, f]) => {
+    getCompanySettings().then(s => {
       if (s) {
         setRazaoSocial(s.name ?? '')
         setFantasia(s.fantasy_name ?? '')
@@ -1512,20 +1504,6 @@ function CompanySection() {
         })
         setLogoUrl(s.logo_url ?? null)
       }
-      setIe(f.ie ?? '')
-      setIm(f.im ?? '')
-      setRegimeTributario(f.regime_tributario ? String(f.regime_tributario) : '')
-      setCnae(f.cnae ?? '')
-      setCfop(f.cfop ?? '')
-      setFiscalAddr({
-        street: f.logradouro ?? '',
-        number: f.numero ?? '',
-        complement: f.complemento ?? '',
-        neighborhood: f.bairro ?? '',
-        city: f.municipio ?? '',
-        state: f.uf ?? '',
-        cep: f.cep ?? '',
-      })
     }).finally(() => setLoading(false))
   }, [])
 
@@ -1586,22 +1564,6 @@ function CompanySection() {
         address_state: addr.state || null,
       })
       if (!res.success) { toast.error(res.error ?? 'Erro ao salvar'); return }
-
-      // Salvar dados fiscais junto
-      await updateFiscalConfig({
-        ie: ie.trim() || undefined,
-        im: im.trim() || undefined,
-        regime_tributario: regimeTributario ? Number(regimeTributario) : undefined,
-        cnae: cnae.trim() || undefined,
-        cfop: cfop.replace(/\D/g, '') || undefined,
-        logradouro: fiscalAddr.street || undefined,
-        numero: fiscalAddr.number || undefined,
-        complemento: fiscalAddr.complement || undefined,
-        bairro: fiscalAddr.neighborhood || undefined,
-        municipio: fiscalAddr.city || undefined,
-        uf: fiscalAddr.state || undefined,
-        cep: fiscalAddr.cep.replace(/\D/g, '') || undefined,
-      })
 
       toast.success('Dados da empresa salvos')
     } finally {
@@ -1703,81 +1665,10 @@ function CompanySection() {
       </div>
 
       <div className="h-px bg-border my-6" />
-
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Dados Fiscais</p>
-      <p className="text-xs text-muted-foreground mb-5">Necessário para emitir NF-e. Configure a IE e o regime tributário da empresa.</p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 mb-4">
-        <FormField id="company-ie" label="Inscrição Estadual (IE)">
-          <Input placeholder="Ex: 123456789" value={ie} onChange={e => setIe(e.target.value)} disabled={loading} />
-        </FormField>
-        <FormField id="company-im" label="Inscrição Municipal (IM)">
-          <Input placeholder="Opcional" value={im} onChange={e => setIm(e.target.value)} disabled={loading} />
-        </FormField>
-        <FormField id="company-regime-tributario" label="Regime Tributário" className="sm:col-span-2">
-          <Select value={regimeTributario} onValueChange={setRegimeTributario}>
-            <SelectTrigger disabled={loading}>
-              <SelectValue placeholder="Selecione o regime tributário" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">Simples Nacional</SelectItem>
-              <SelectItem value="2">Simples Nacional – Excesso de sublimite</SelectItem>
-              <SelectItem value="3">Regime Normal (Lucro Presumido / Real)</SelectItem>
-            </SelectContent>
-          </Select>
-        </FormField>
-        <FormField id="company-cnae" label="CNAE Principal">
-          <Input placeholder="Ex: 4711-3/01" value={cnae} onChange={e => setCnae(e.target.value)} disabled={loading} />
-        </FormField>
-        <FormField id="company-cfop" label="CFOP Padrão" hint="4 dígitos — natureza da operação fiscal (5102 = venda interna, 6102 = venda interestadual)">
-          <Input
-            placeholder="Ex: 5102"
-            maxLength={4}
-            value={cfop}
-            onChange={e => setCfop(e.target.value.replace(/\D/g, '').slice(0, 4))}
-            disabled={loading}
-          />
-        </FormField>
-      </div>
-
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Endereço Fiscal</p>
-      <p className="text-xs text-muted-foreground mb-4">Se diferente do endereço principal, preencha o endereço fiscal usado na emissão de NF-e.</p>
-      <div className="flex flex-col gap-4">
-        <div className="flex items-end gap-3">
-          <div className="w-[220px]">
-            <FormField id="fiscal-cep" label="CEP">
-              <CepInput
-                value={fiscalAddr.cep}
-                onChange={v => setFiscalAddr(a => ({ ...a, cep: v }))}
-                onAddressFound={r => setFiscalAddr(a => ({ ...a, street: r.address, neighborhood: r.neighborhood, city: r.city, state: r.state }))}
-                onNotFound={() => toast.error('CEP não encontrado')}
-              />
-            </FormField>
-          </div>
-        </div>
-        <div className="grid grid-cols-[1fr_80px_1fr] gap-x-4 gap-y-4">
-          <FormField id="fiscal-rua" label="Rua">
-            <Input placeholder="Rua" value={fiscalAddr.street} onChange={e => setFiscalAddr(a => ({ ...a, street: e.target.value }))} disabled={loading} />
-          </FormField>
-          <FormField id="fiscal-numero" label="Nº">
-            <Input placeholder="Nº" value={fiscalAddr.number} onChange={e => setFiscalAddr(a => ({ ...a, number: e.target.value }))} disabled={loading} />
-          </FormField>
-          <FormField id="fiscal-complemento" label="Complemento">
-            <Input placeholder="Complemento" value={fiscalAddr.complement} onChange={e => setFiscalAddr(a => ({ ...a, complement: e.target.value }))} disabled={loading} />
-          </FormField>
-        </div>
-        <div className="grid grid-cols-[1fr_1fr_80px] gap-x-4 gap-y-4">
-          <FormField id="fiscal-bairro" label="Bairro">
-            <Input placeholder="Bairro" value={fiscalAddr.neighborhood} onChange={e => setFiscalAddr(a => ({ ...a, neighborhood: e.target.value }))} disabled={loading} />
-          </FormField>
-          <FormField id="fiscal-cidade" label="Cidade">
-            <Input placeholder="Cidade" value={fiscalAddr.city} onChange={e => setFiscalAddr(a => ({ ...a, city: e.target.value }))} disabled={loading} />
-          </FormField>
-          <FormField id="fiscal-uf" label="UF">
-            <Input placeholder="UF" value={fiscalAddr.state} maxLength={2} onChange={e => setFiscalAddr(a => ({ ...a, state: e.target.value.toUpperCase() }))} disabled={loading} />
-          </FormField>
-        </div>
-      </div>
+      <p className="text-xs text-muted-foreground">
+        Dados fiscais (IE, CRT, CNAE, endereço do emitente) são configurados em{' '}
+        <a href="/fiscal/configuracoes" className="text-primary hover:underline">Fiscal → Configurações</a>.
+      </p>
 
       <div className="flex justify-end mt-6">
         <Button onClick={handleSave} disabled={saving || loading}>
