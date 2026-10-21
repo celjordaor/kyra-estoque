@@ -13,15 +13,16 @@ export default async function KyraHistoryPage() {
         title="Histórico da Kyra"
         description="Retome ou consulte conversas anteriores com a Kyra."
         icon={Clock}
-      >
-        <Link
-          href="/kyra"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Nova conversa
-        </Link>
-      </PageHeader>
+        actions={
+          <Link
+            href="/kyra"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Nova conversa
+          </Link>
+        }
+      />
 
       <div className="flex-1 overflow-y-auto p-5">
         {conversations.length === 0 ? (
