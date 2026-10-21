@@ -54,9 +54,9 @@ export function lerCertificadoPFX(pfxBase64: string, senha: string): Certificado
   }
 
   const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })
-  const keyBag = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag]?.[0]
+  const keyBag = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag as string]?.[0]
   const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })
-  const certBag = certBags[forge.pki.oids.certBag]?.[0]
+  const certBag = certBags[forge.pki.oids.certBag as string]?.[0]
 
   if (!keyBag?.key || !certBag?.cert) {
     throw new CertificadoError('O arquivo não contém uma chave privada e certificado válidos (PKCS#12).')

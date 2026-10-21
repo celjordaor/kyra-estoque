@@ -147,7 +147,7 @@ function parseElement(xml: string): SimpleElement | null {
   const tag = tagMatch[1]!
   const attrsStr = tagMatch[2] ?? ''
   const attrs = parseAttrs(attrsStr)
-  const inner = xml.slice(tagMatch[0].length, xml.lastIndexOf(`</${tag}>`))
+  const inner = xml.slice(tagMatch[0]!.length, xml.lastIndexOf(`</${tag}>`))
   const children = parseChildren(inner)
   const text = children.length === 0 ? inner.trim() : ''
   return { tag, attrs, text, children }
