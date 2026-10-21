@@ -2,7 +2,26 @@
 // apps/web/src/lib/actions/notifications.ts
 // Notificações in-app — leitura (client) e criação (server actions internos)
 
-import { createAdminSupabaseClient, getServerContext } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
+
+// ── Context helper ────────────────────────────────────────────────────────────
+
+async function getServerContext() {
+  const cookieStore = await cookies()
+  const supabase = createServerSupabaseClient(cookieStore)
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) throw new Error('Não autenticado')
+  const admin = createAdminSupabaseClient()
+  const { data: profileData } = await (admin as any)
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single()
+  const profile = profileData as { company_id: string | null } | null
+  if (!profile?.company_id) throw new Error('Empresa não encontrada')
+  return { companyId: profile.company_id as string, userId: user.id }
+}
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -30,9 +49,6 @@ export interface Notification {
 
 // ── Leitura ───────────────────────────────────────────────────────────────────
 
-/**
- * Retorna as últimas `limit` notificações da empresa do usuário autenticado.
- */
 export async function getNotifications(limit = 20): Promise<Notification[]> {
   try {
     const { companyId } = await getServerContext()
@@ -55,9 +71,6 @@ export async function getNotifications(limit = 20): Promise<Notification[]> {
   }
 }
 
-/**
- * Contagem de notificações não lidas para o badge do sino.
- */
 export async function getUnreadCount(): Promise<number> {
   try {
     const { companyId } = await getServerContext()
@@ -76,7 +89,7 @@ export async function getUnreadCount(): Promise<number> {
   }
 }
 
-// ── Escrita ───────────────────────────────────────────────────────────────────
+// ── Criação (fire-and-forget pelas outras actions) ────────────────────────────
 
 interface CreateNotificationInput {
   companyId: string
@@ -85,14 +98,9 @@ interface CreateNotificationInput {
   body?: string
   actionUrl?: string
   metadata?: Record<string, unknown>
-  /** Destinatário específico (null = para todos da empresa) */
   userId?: string | null
 }
 
-/**
- * Cria uma notificação in-app. Chamado internamente por outras server actions
- * (sales, stock, etc.) de forma fire-and-forget (.catch(() => {})).
- */
 export async function createNotification(input: CreateNotificationInput): Promise<void> {
   try {
     const admin = createAdminSupabaseClient()
@@ -130,7 +138,7 @@ export async function markNotificationRead(id: string): Promise<void> {
       .eq('id', id)
       .eq('company_id', companyId)
   } catch {
-    // silencioso — não bloquear UX
+    // silencioso
   }
 }
 
