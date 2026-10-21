@@ -30,7 +30,7 @@ export async function getConversations(limit = 30): Promise<ConversationSummary[
   if (!user) return []
 
   const admin = createAdminSupabaseClient()
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('ai_conversations')
     .select('id, title, messages, token_count, created_at, updated_at')
     .eq('user_id', user.id)
@@ -63,7 +63,7 @@ export async function getConversation(conversationId: string): Promise<Conversat
   if (!user) return null
 
   const admin = createAdminSupabaseClient()
-  const { data } = await admin
+  const { data } = await (admin as any)
     .from('ai_conversations')
     .select('id, title, messages, token_count, created_at, updated_at')
     .eq('id', conversationId)
@@ -90,7 +90,7 @@ export async function deleteConversation(conversationId: string): Promise<{ ok: 
   if (!user) return { ok: false }
 
   const admin = createAdminSupabaseClient()
-  const { error } = await admin
+  const { error } = await (admin as any)
     .from('ai_conversations')
     .delete()
     .eq('id', conversationId)
