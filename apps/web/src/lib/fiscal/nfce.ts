@@ -66,7 +66,7 @@ function calcularDV(chave: string): number {
   let soma = 0
   let idx = 0
   for (let i = chave.length - 1; i >= 0; i--) {
-    soma += parseInt(chave[i]) * pesos[idx % 8]
+    soma += parseInt(chave[i]!) * pesos[idx % 8]!
     idx++
   }
   const resto = soma % 11

@@ -211,8 +211,8 @@ export async function getSalesReport(params: {
   for (const s of sales ?? []) {
     const day = s.created_at.substring(0, 10)
     if (!dayMap[day]) dayMap[day] = { count: 0, revenue: 0 }
-    dayMap[day].count++
-    dayMap[day].revenue += Number(s.total_amount)
+    dayMap[day]!.count++
+    dayMap[day]!.revenue += Number(s.total_amount)
   }
   const timeline: SalesReportRow[] = Object.entries(dayMap).map(([date, d]) => ({
     date, sales_count: d.count, total_revenue: d.revenue,
@@ -229,9 +229,9 @@ export async function getSalesReport(params: {
         category: item.products?.categories?.name ?? 'Sem categoria',
         qty: 0, revenue: 0, profit: 0,
       }
-      prodMap[pid].qty += item.quantity
-      prodMap[pid].revenue += item.quantity * item.unit_price
-      prodMap[pid].profit += item.quantity * (item.unit_price - (item.products?.cost_price ?? 0))
+      prodMap[pid]!.qty += item.quantity
+      prodMap[pid]!.revenue += item.quantity * item.unit_price
+      prodMap[pid]!.profit += item.quantity * (item.unit_price - (item.products?.cost_price ?? 0))
     }
   }
   const topProducts: SalesProductRow[] = Object.entries(prodMap)
