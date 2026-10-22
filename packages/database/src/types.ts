@@ -500,7 +500,7 @@ export type DiscountCouponUpdate = Partial<Omit<DiscountCouponInsert, 'company_i
 // ── Sprint 10a: Planos, Assinaturas, Entitlements ─────────────
 
 export type PlanInterval = 'monthly' | 'annual'
-export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused'
+export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired' | 'paused'
 
 export interface PlanRow {
   id: string

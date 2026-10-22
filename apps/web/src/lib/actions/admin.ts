@@ -93,7 +93,7 @@ export async function getAdminTenants(): Promise<TenantRow[]> {
       .from('subscriptions')
       .select('company_id, status, trial_ends_at, plans(name, slug)')
       .in('company_id', companyIds)
-      .in('status', ['active', 'trialing', 'past_due']),
+      .in('status', ['active', 'trialing', 'past_due', 'paused', 'expired', 'canceled']),
     (admin as any)
       .from('profiles')
       .select('company_id')
@@ -423,7 +423,6 @@ export async function getTenantDetail(companyId: string): Promise<TenantDetail |
       .from('subscriptions')
       .select('id, status, trial_ends_at, current_period_start, current_period_end, plans(name, slug)')
       .eq('company_id', companyId)
-      .in('status', ['active', 'trialing', 'past_due'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -546,10 +545,57 @@ export async function changeTenantPlan(
         current_period_end: periodEnd,
       })
       .eq('company_id', companyId)
-      .in('status', ['active', 'trialing', 'past_due'])
+      .in('status', ['active', 'trialing', 'past_due', 'paused', 'expired', 'canceled'])
 
     if (error) return { success: false, error: error.message }
 
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { success: false, error: e?.message ?? String(e) }
+  }
+}
+
+// ── Tenant: suspender / reativar assinatura ────────────────────
+
+export async function suspendTenantSubscription(
+  companyId: string,
+  reason: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { admin } = await requireSuperAdmin()
+    const { data: sub } = await (admin as any).from('subscriptions').select('id, status')
+      .eq('company_id', companyId).order('created_at', { ascending: false }).limit(1).maybeSingle()
+    if (!sub) return { success: false, error: 'Assinatura não encontrada' }
+    const { error } = await (admin as any).from('subscriptions').update({
+      status: 'paused', suspended_at: new Date().toISOString(),
+      suspend_reason: (reason || 'manual').slice(0, 120), updated_at: new Date().toISOString(),
+    }).eq('id', sub.id)
+    if (error) return { success: false, error: error.message }
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { success: false, error: e?.message ?? String(e) }
+  }
+}
+
+export async function reactivateTenantSubscription(
+  companyId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { admin } = await requireSuperAdmin()
+    const { data: sub } = await (admin as any).from('subscriptions').select('id, current_period_end, trial_ends_at')
+      .eq('company_id', companyId).order('created_at', { ascending: false }).limit(1).maybeSingle()
+    if (!sub) return { success: false, error: 'Assinatura não encontrada' }
+    // Volta para "ativa" se o período pago ainda vale; senão, concede 7 dias de teste para regularizar
+    const paidValid = sub.current_period_end && new Date(sub.current_period_end) > new Date()
+    const patch: Record<string, unknown> = paidValid
+      ? { status: 'active' }
+      : { status: 'trialing', trial_ends_at: new Date(Date.now() + 7 * 86_400_000).toISOString() }
+    const { error } = await (admin as any).from('subscriptions').update({
+      ...patch, past_due_since: null, suspended_at: null, suspend_reason: null, updated_at: new Date().toISOString(),
+    }).eq('id', sub.id)
+    if (error) return { success: false, error: error.message }
     revalidatePath('/admin')
     return { success: true }
   } catch (e: any) {

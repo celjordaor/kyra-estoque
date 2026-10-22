@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import {
   getAdminStats, getAdminTenants, getLeads, getSupportTickets, getAdminLogs,
   toggleTenantActive, updateLeadStatus, updateTicketStatus,
-  getTenantDetail, changeTenantPlan, getTenantOverrides, setTenantOverride, deleteTenantOverride,
+  getTenantDetail, changeTenantPlan, suspendTenantSubscription, reactivateTenantSubscription, getTenantOverrides, setTenantOverride, deleteTenantOverride,
   getFeatureFlags, updateFeatureFlag, getAiUsageStats, seedOnboardingCheckpoints, deleteTenant,
   type AdminStats, type TenantRow, type LeadRow, type SupportTicketRow, type LogEntry,
   type TenantDetail, type TenantOverrideRow, type FeatureFlagRow, type AiUsageSummary,
@@ -66,6 +66,9 @@ function SubStatusBadge({ status }: { status: string | null }) {
     trialing: { label: 'Trial',     variant: 'info' },
     past_due: { label: 'Em atraso', variant: 'warning' },
     cancelled:{ label: 'Cancelado', variant: 'danger' },
+    canceled: { label: 'Cancelado', variant: 'danger' },
+    paused:   { label: 'Suspensa',  variant: 'danger' },
+    expired:  { label: 'Teste encerrado', variant: 'danger' },
   }
   const m = map[status] ?? { label: status, variant: 'neutral' as const }
   return <Badge variant={m.variant} className="text-xs">{m.label}</Badge>
@@ -671,6 +674,18 @@ function TenantDetailPanel({
     setSavingPlan(false)
   }
 
+  async function handleSuspend() {
+    if (!window.confirm('Suspender a assinatura deste tenant? O acesso ao app será bloqueado.')) return
+    const r = await suspendTenantSubscription(companyId, 'manual')
+    if (r.success) { toast.success('Assinatura suspensa'); getTenantDetail(companyId).then(setDetail) }
+    else toast.error(r.error ?? 'Erro ao suspender')
+  }
+  async function handleReactivate() {
+    const r = await reactivateTenantSubscription(companyId)
+    if (r.success) { toast.success('Assinatura reativada'); getTenantDetail(companyId).then(setDetail) }
+    else toast.error(r.error ?? 'Erro ao reativar')
+  }
+
   async function handleAddOverride() {
     if (!overrideKey.trim() || !overrideReason.trim()) return
     setSavingOverride(true)
@@ -728,6 +743,9 @@ function TenantDetailPanel({
           <Button size="sm" variant="outline" onClick={handleChangePlan} disabled={savingPlan || !planInput}>
             {savingPlan ? 'Salvando…' : 'Trocar plano'}
           </Button>
+          {d.subscription && ['paused', 'expired', 'canceled'].includes(d.subscription.status)
+            ? <Button size="sm" onClick={handleReactivate}>Reativar</Button>
+            : d.subscription && <Button size="sm" variant="outline" onClick={handleSuspend}>Suspender</Button>}
         </div>
       </div>
 

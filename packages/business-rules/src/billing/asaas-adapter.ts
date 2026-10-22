@@ -147,11 +147,12 @@ export class AsaasAdapter implements BillingProvider {
       method: 'POST',
       body: JSON.stringify({
         customer: data.customerId,
-        billingType: 'BOLETO',
+        billingType: data.billingType ?? 'PIX',
         cycle,
         value: data.amountCents / 100,
         nextDueDate: data.nextDueDate,
         description: data.description,
+        externalReference: data.externalReference,
       }),
     })
     return res.id
@@ -163,8 +164,15 @@ export class AsaasAdapter implements BillingProvider {
       body: JSON.stringify({
         value: planData.amountCents / 100,
         cycle: planData.billingInterval === 'YEARLY' ? 'YEARLY' : 'MONTHLY',
+        updatePendingPayments: true,
       }),
     })
+  }
+
+  async getSubscriptionCheckoutUrl(subscriptionId: string): Promise<string | null> {
+    const res = await asaasRequest(this.creds, `/subscriptions/${subscriptionId}/payments?limit=1&offset=0`)
+    const first = (res?.data ?? [])[0]
+    return (first?.invoiceUrl as string | undefined) ?? null
   }
 
   async cancelSubscription(subscriptionId: string): Promise<void> {
@@ -179,8 +187,10 @@ export class AsaasAdapter implements BillingProvider {
 
     return {
       event,
+      eventId: p.id as string | undefined,
+      externalReference: (payment?.externalReference ?? subscription?.externalReference) as string | undefined,
       chargeId: payment?.id as string | undefined,
-      subscriptionId: subscription?.id as string | undefined,
+      subscriptionId: (subscription?.id ?? payment?.subscription) as string | undefined,
       customerId: (payment?.customer ?? subscription?.customer) as string | undefined,
       status: payment?.status as string | undefined,
       paidAt: payment?.paymentDate as string | undefined,

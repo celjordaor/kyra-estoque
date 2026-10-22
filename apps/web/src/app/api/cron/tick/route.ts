@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { createAdminSupabaseClient } from '@kyra/database'
 import { runScheduledAutomations } from '@/lib/automations/engine'
 import { processOutbox } from '@/lib/whatsapp/outbox'
+import { runBillingMaintenance } from '@/lib/billing/subscription-sync'
 
 export const maxDuration = 60
 
@@ -16,7 +17,15 @@ export async function GET(req: NextRequest) {
     return new Response('unauthorized', { status: 401 })
   }
   const admin = createAdminSupabaseClient() as any
-  const { executed } = await runScheduledAutomations()
-  const sent = await processOutbox(admin, 50)
-  return Response.json({ ok: true, automations: executed, outbox: sent })
+  // Cada etapa isolada: uma falha não impede as demais (cobrança primeiro)
+  const run = async <T,>(name: string, fn: () => Promise<T>): Promise<T | { error: string }> => {
+    try { return await fn() } catch (e) {
+      console.error(`[cron/tick] ${name}:`, e)
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  }
+  const billing = await run('billing', () => runBillingMaintenance(admin))
+  const automations = await run('automations', () => runScheduledAutomations())
+  const outbox = await run('outbox', () => processOutbox(admin, 50))
+  return Response.json({ ok: true, billing, automations, outbox })
 }

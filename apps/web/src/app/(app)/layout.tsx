@@ -1,7 +1,8 @@
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 import { AppShell } from '@/components/layout/app-shell'
+import { statusGrantsAccess } from '@kyra/business-rules'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
@@ -17,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const admin = createAdminSupabaseClient()
   const { data: profileData } = await (admin as any)
     .from('profiles')
-    .select('full_name, role, avatar_url, company_id, is_active')
+    .select('full_name, role, avatar_url, company_id, is_active, is_super_admin')
     .eq('id', user.id)
     .single()
 
@@ -27,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     avatar_url: string | null
     company_id: string | null
     is_active: boolean
+    is_super_admin: boolean | null
   } | null
 
   // Usuário sem empresa vinculada → não pode usar o app
@@ -37,6 +39,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Usuário desativado → bloquear acesso (ex-funcionário removido da empresa)
   if (profile?.is_active === false) {
     redirect('/login?error=account_inactive')
+  }
+
+  // Assinatura sem acesso (teste vencido, suspensa por inadimplência, cancelada):
+  // o usuário entra, mas só vê a tela de planos e o perfil.
+  if (!profile.is_super_admin) {
+    const pathname = (await headers()).get('x-pathname') ?? ''
+    const free = pathname.startsWith('/subscribe') || pathname.startsWith('/profile')
+    if (!free) {
+      const { data: sub } = await (admin as any)
+        .from('subscriptions').select('status, trial_ends_at')
+        .eq('company_id', profile.company_id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+      if (sub && !statusGrantsAccess(sub.status, sub.trial_ends_at)) redirect('/subscribe' as never)
+    }
   }
 
   const shellUser = {

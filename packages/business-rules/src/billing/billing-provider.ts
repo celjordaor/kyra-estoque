@@ -45,6 +45,9 @@ export interface SubscriptionData {
   amountCents: number
   nextDueDate: string
   description?: string
+  /** Forma de pagamento da recorrência (cartão ou Pix). */
+  billingType?: 'PIX' | 'CREDIT_CARD'
+  externalReference?: string
 }
 
 export interface PlanData {
@@ -54,6 +57,9 @@ export interface PlanData {
 
 export interface WebhookResult {
   event: string
+  /** ID único do evento no provedor (idempotência). */
+  eventId?: string
+  externalReference?: string
   chargeId?: string
   subscriptionId?: string
   customerId?: string
@@ -71,5 +77,7 @@ export interface BillingProvider {
   createSubscription(data: SubscriptionData): Promise<string>
   changeSubscription(subscriptionId: string, planData: PlanData): Promise<void>
   cancelSubscription(subscriptionId: string): Promise<void>
+  /** URL hospedada pelo provedor onde o cliente paga a 1ª cobrança (cartão/Pix). */
+  getSubscriptionCheckoutUrl(subscriptionId: string): Promise<string | null>
   handleWebhook(payload: unknown, signature?: string): Promise<WebhookResult>
 }

@@ -56,6 +56,10 @@ export class MockAdapter implements BillingProvider {
     // no-op
   }
 
+  async getSubscriptionCheckoutUrl(_subscriptionId: string): Promise<string | null> {
+    return null
+  }
+
   async handleWebhook(payload: unknown): Promise<WebhookResult> {
     return {
       event: 'PAYMENT_RECEIVED',

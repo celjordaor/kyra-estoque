@@ -161,34 +161,12 @@ function SubscriptionSection() {
       .finally(() => setInvoicesLoading(false))
   }, [])
 
-  async function handleManagePlan() {
-    // Em período de teste → leva para a página de planos para upgrade
-    if (info?.status === 'trialing') {
-      window.open('/#planos', '_blank', 'noopener,noreferrer')
-      return
-    }
-
-    setPortalLoading(true)
-    try {
-      const url = await getBillingPortalUrl()
-      if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer')
-      } else {
-        // Assinatura ainda não migrada para Asaas — direcionar ao suporte
-        toast.info(
-          'Gerencie sua assinatura pelo WhatsApp ou e-mail: suporte@kyraestoque.com.br',
-          { duration: 8000 }
-        )
-      }
-    } catch {
-      toast.error('Erro ao abrir portal de gerenciamento.')
-    } finally {
-      setPortalLoading(false)
-    }
+  function handleManagePlan() {
+    window.location.href = '/subscribe'
   }
 
   function handleUpgrade() {
-    window.open('/#planos', '_blank', 'noopener,noreferrer')
+    window.location.href = '/subscribe'
   }
 
   if (loading) {
@@ -223,7 +201,8 @@ function SubscriptionSection() {
     active: 'Ativo',
     past_due: 'Pagamento atrasado',
     canceled: 'Cancelado',
-    paused: 'Pausado',
+    paused: 'Suspensa',
+    expired: 'Teste encerrado',
   }
 
   const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
@@ -231,7 +210,8 @@ function SubscriptionSection() {
     active: 'success',
     past_due: 'warning',
     canceled: 'danger',
-    paused: 'neutral',
+    paused: 'danger',
+    expired: 'danger',
   }
 
   return (

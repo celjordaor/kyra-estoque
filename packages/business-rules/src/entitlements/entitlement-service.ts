@@ -80,6 +80,8 @@ async function fetchActiveSubscription(companyId: string) {
     .maybeSingle()
 
   if (error || !data) return null
+  // Teste vencido sem o job diário ter rodado ainda: já não dá acesso
+  if (data.status === 'trialing' && data.trial_ends_at && new Date(data.trial_ends_at) < new Date()) return null
   return data as any
 }
 
