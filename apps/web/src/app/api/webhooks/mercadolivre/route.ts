@@ -1,11 +1,12 @@
 // ── Mercado Livre Webhook (Notifications) — Sprint 18b ──────────────────────
 // ML envia notificações para tópicos: orders_v2, items
-// Verificação: x-signature HMAC-SHA256 com o client_secret do aplicativo ML de cada empresa
+// Verificação: x-signature HMAC-SHA256 com o client_secret do app Kyra (MERCADOLIVRE_CLIENT_SECRET)
 // Docs: https://developers.mercadolivre.com.br/pt_br/notificacoes-e-webhooks
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@kyra/database'
+import { ensureFreshMlConfig, getMlAppCredentials } from '@/lib/channels/mercado-livre-oauth'
 
 function verifyMLSignature(
   clientSecret: string,
@@ -48,10 +49,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  // App único do Kyra: a assinatura usa o secret do app; o user_id da notificação
+  // (seller_id) identifica de qual empresa é o pedido.
+  const { clientSecret, configured } = getMlAppCredentials()
+  if (!configured || !verifyMLSignature(clientSecret, notificationId, xSignature, xRequestId)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const admin = createAdminSupabaseClient()
 
-  // Cada cliente usa o próprio aplicativo ML: acha a integração pelo seller_id
-  // (user_id da notificação) e valida a assinatura com o client_secret DELA.
   const { data: integration } = await (admin as any)
     .from('company_integrations')
     .select('id, company_id, config')
@@ -62,12 +68,13 @@ export async function POST(req: NextRequest) {
 
   if (!integration) return NextResponse.json({ ok: true })
 
-  const { id: integrationId, company_id: companyId, config } = integration
-  const cfg = config as Record<string, unknown>
-
-  const clientSecret = typeof cfg.client_secret === 'string' ? cfg.client_secret : ''
-  if (!verifyMLSignature(clientSecret, notificationId, xSignature, xRequestId)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id: integrationId, company_id: companyId } = integration
+  let cfg = integration.config as Record<string, unknown>
+  try {
+    cfg = await ensureFreshMlConfig(admin, integrationId, cfg)
+  } catch (e) {
+    console.error('[ml-webhook] refresh token falhou:', e)
+    return NextResponse.json({ ok: true })
   }
 
   // Busca detalhes do pedido via API ML

@@ -6,6 +6,7 @@ import { canUse, hasFeature } from '@kyra/business-rules'
 import { revalidatePath } from 'next/cache'
 import { randomBytes } from 'crypto'
 import { getChannelAdapter, channelHasAdapter } from '@/lib/channels'
+import { ensureFreshMlConfig } from '@/lib/channels/mercado-livre-oauth'
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -158,29 +159,13 @@ export async function connectChannel(input: ConnectChannelInput): Promise<{
     return { ok: false, error: 'Credenciais inválidas. Informe ao menos uma chave de API ou token.' }
   }
 
-  // Mercado Livre: cada cliente usa o próprio aplicativo (client_id/secret).
-  // Valida o token e descobre o seller_id (usado pelo webhook para achar a empresa).
-  let mlExtra: Record<string, unknown> = {}
+  // Mercado Livre é conectado via OAuth (/api/channels/mercadolivre/connect)
   if (type === 'mercado_livre') {
-    if (!credentials.token || !credentials.client_id || !credentials.client_secret) {
-      return { ok: false, error: 'Informe App ID, Client Secret e Access Token do seu aplicativo Mercado Livre.' }
-    }
-    try {
-      const meRes = await fetch('https://api.mercadolibre.com/users/me', {
-        headers: { Authorization: `Bearer ${credentials.token}` },
-      })
-      if (!meRes.ok) return { ok: false, error: 'Access Token do Mercado Livre inválido ou expirado.' }
-      const me = await meRes.json() as { id?: number }
-      if (!me.id) return { ok: false, error: 'Não foi possível identificar a conta do Mercado Livre.' }
-      mlExtra = { access_token: credentials.token, seller_id: String(me.id) }
-    } catch {
-      return { ok: false, error: 'Falha ao validar credenciais no Mercado Livre. Tente novamente.' }
-    }
+    return { ok: false, error: 'Use o botão "Conectar com Mercado Livre".' }
   }
 
   // Upsert (one row per type per company)
   const config = {
-    ...mlExtra,
     api_key:            credentials.api_key ?? null,
     token:              credentials.token ?? null,
     store_url:          credentials.store_url ?? null,
@@ -283,8 +268,16 @@ export async function syncChannel(integrationId: string): Promise<{ ok: boolean;
 
   if (!int2) return { ok: false, error: 'Integração não encontrada' }
 
-  const cfg = (int2.config ?? {}) as Record<string, unknown>
+  let cfg = (int2.config ?? {}) as Record<string, unknown>
   const channelType = int2.type as string
+
+  if (channelType === 'mercado_livre') {
+    try {
+      cfg = await ensureFreshMlConfig(admin, integrationId, cfg)
+    } catch (e) {
+      return { ok: false, error: `Conexão com o Mercado Livre expirou. Reconecte o canal. (${e instanceof Error ? e.message : String(e)})` }
+    }
+  }
 
   // 2. Se o canal tem adapter real, sincroniza estoque e pedidos
   if (channelHasAdapter(channelType)) {

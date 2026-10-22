@@ -33,12 +33,7 @@ const CHANNEL_META: Record<ChannelType, {
     description: 'Maior marketplace da América Latina',
     icon: ShoppingBag,
     iconColor: 'text-warning',
-    fields: [
-      { key: 'client_id',     label: 'App ID (Client ID)',  placeholder: 'ID do seu aplicativo no Mercado Livre' },
-      { key: 'client_secret', label: 'Client Secret',       placeholder: 'Chave secreta do seu aplicativo', secret: true },
-      { key: 'token',         label: 'Access Token',        placeholder: 'APP_USR-...', secret: true },
-      { key: 'account_name',  label: 'Nome da loja',        placeholder: 'Ex: loja_kyra_oficial' },
-    ],
+    fields: [],
   },
   shopify: {
     label: 'Shopify',
@@ -371,6 +366,23 @@ function ConnectionWizard({ onClose, onConnected, canAdd, limit }: {
       {/* Step 2 — Credentials */}
       {step === 2 && meta && selectedType && (
         <div>
+          {selectedType === 'mercado_livre' ? (
+            <>
+              <h3 className="font-semibold mb-1">Conectar com Mercado Livre</h3>
+              <p className="text-sm text-muted-foreground mb-5">
+                Você será levado ao Mercado Livre para entrar com a sua conta de vendedor e autorizar o Kyra Estoque.
+                Não é preciso copiar chaves ou tokens.
+              </p>
+              <div className="flex justify-between mt-6">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+                </Button>
+                <Button onClick={() => { window.location.href = '/api/channels/mercadolivre/connect' }}>
+                  <ExternalLink className="h-4 w-4 mr-1.5" /> Conectar com Mercado Livre
+                </Button>
+              </div>
+            </>
+          ) : (<>
           <h3 className="font-semibold mb-1">Credenciais do {meta.label}</h3>
           <p className="text-sm text-muted-foreground mb-5">
             Informe as chaves de acesso para conectar sua conta. Elas são armazenadas com segurança.
@@ -407,6 +419,7 @@ function ConnectionWizard({ onClose, onConnected, canAdd, limit }: {
               Próximo <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
+          </>)}
         </div>
       )}
 
@@ -714,6 +727,25 @@ export function ChannelsPage() {
   }, [])
 
   React.useEffect(() => { load() }, [load])
+
+  // Resultado do OAuth do Mercado Livre (?ml=...)
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const ml = params.get('ml')
+    if (!ml) return
+    const msgs: Record<string, [boolean, string]> = {
+      connected:      [true,  'Mercado Livre conectado com sucesso!'],
+      denied:         [false, 'Autorização do Mercado Livre cancelada.'],
+      limit:          [false, 'Limite de canais do seu plano atingido.'],
+      not_configured: [false, 'Integração com Mercado Livre ainda não está disponível. Contate o suporte.'],
+      error:          [false, 'Não foi possível conectar ao Mercado Livre. Tente novamente.'],
+    }
+    const [ok, text] = msgs[ml] ?? msgs.error!
+    if (ok) toast.success(text)
+    else toast.error(text)
+    window.history.replaceState({}, '', window.location.pathname)
+    if (ok) load()
+  }, [load])
 
   // Keep selectedChannel in sync
   React.useEffect(() => {
