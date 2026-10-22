@@ -158,8 +158,29 @@ export async function connectChannel(input: ConnectChannelInput): Promise<{
     return { ok: false, error: 'Credenciais inválidas. Informe ao menos uma chave de API ou token.' }
   }
 
+  // Mercado Livre: cada cliente usa o próprio aplicativo (client_id/secret).
+  // Valida o token e descobre o seller_id (usado pelo webhook para achar a empresa).
+  let mlExtra: Record<string, unknown> = {}
+  if (type === 'mercado_livre') {
+    if (!credentials.token || !credentials.client_id || !credentials.client_secret) {
+      return { ok: false, error: 'Informe App ID, Client Secret e Access Token do seu aplicativo Mercado Livre.' }
+    }
+    try {
+      const meRes = await fetch('https://api.mercadolibre.com/users/me', {
+        headers: { Authorization: `Bearer ${credentials.token}` },
+      })
+      if (!meRes.ok) return { ok: false, error: 'Access Token do Mercado Livre inválido ou expirado.' }
+      const me = await meRes.json() as { id?: number }
+      if (!me.id) return { ok: false, error: 'Não foi possível identificar a conta do Mercado Livre.' }
+      mlExtra = { access_token: credentials.token, seller_id: String(me.id) }
+    } catch {
+      return { ok: false, error: 'Falha ao validar credenciais no Mercado Livre. Tente novamente.' }
+    }
+  }
+
   // Upsert (one row per type per company)
   const config = {
+    ...mlExtra,
     api_key:            credentials.api_key ?? null,
     token:              credentials.token ?? null,
     store_url:          credentials.store_url ?? null,

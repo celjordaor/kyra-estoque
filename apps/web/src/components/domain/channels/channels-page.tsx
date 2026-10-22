@@ -34,8 +34,10 @@ const CHANNEL_META: Record<ChannelType, {
     icon: ShoppingBag,
     iconColor: 'text-warning',
     fields: [
-      { key: 'token',      label: 'Access Token',  placeholder: 'APP_USR-...', secret: true },
-      { key: 'account_name', label: 'Nome da loja', placeholder: 'Ex: loja_kyra_oficial' },
+      { key: 'client_id',     label: 'App ID (Client ID)',  placeholder: 'ID do seu aplicativo no Mercado Livre' },
+      { key: 'client_secret', label: 'Client Secret',       placeholder: 'Chave secreta do seu aplicativo', secret: true },
+      { key: 'token',         label: 'Access Token',        placeholder: 'APP_USR-...', secret: true },
+      { key: 'account_name',  label: 'Nome da loja',        placeholder: 'Ex: loja_kyra_oficial' },
     ],
   },
   shopify: {

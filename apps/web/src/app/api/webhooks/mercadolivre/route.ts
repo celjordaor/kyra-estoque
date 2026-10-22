@@ -1,25 +1,27 @@
 // ── Mercado Livre Webhook (Notifications) — Sprint 18b ──────────────────────
 // ML envia notificações para tópicos: orders_v2, items
-// Verificação: header x-signature com HMAC-SHA256 (v2)
+// Verificação: x-signature HMAC-SHA256 com o client_secret do aplicativo ML de cada empresa
 // Docs: https://developers.mercadolivre.com.br/pt_br/notificacoes-e-webhooks
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@kyra/database'
 
-const CLIENT_SECRET = process.env.MERCADOLIVRE_CLIENT_SECRET ?? ''
-
-function verifyMLSignature(notificationId: string, xSignature: string, xRequestId: string): boolean {
-  if (!CLIENT_SECRET) return false
-  // Formato do manifesto: ts={ts};v1={hash}
-  const parts = Object.fromEntries(xSignature.split(',').map(p => p.split('=')))
+function verifyMLSignature(
+  clientSecret: string,
+  notificationId: string,
+  xSignature: string,
+  xRequestId: string,
+): boolean {
+  if (!clientSecret) return false
+  // Formato do header: ts={ts},v1={hash}
+  const parts = Object.fromEntries(xSignature.split(',').map(p => p.trim().split('=')))
   const ts = parts['ts']
   const v1 = parts['v1']
   if (!ts || !v1) return false
-  // ML v2: id = notification id from body; request-id = x-request-id header
   // Docs: https://developers.mercadolivre.com.br/pt_br/notificacoes-e-webhooks
   const message = `id:${notificationId};request-id:${xRequestId};ts:${ts};`
-  const digest = createHmac('sha256', CLIENT_SECRET).update(message).digest('hex')
+  const digest = createHmac('sha256', clientSecret).update(message).digest('hex')
   try {
     return timingSafeEqual(Buffer.from(digest), Buffer.from(v1))
   } catch {
@@ -32,19 +34,13 @@ export async function POST(req: NextRequest) {
   const xSignature = req.headers.get('x-signature') ?? ''
   const xRequestId = req.headers.get('x-request-id') ?? ''
 
-  // Parse body first to extract notification id for HMAC verification
-  const payload = JSON.parse(rawBody) as {
-    id?: number
-    topic?: string
-    resource?: string
-    user_id?: number
+  let payload: { id?: number; topic?: string; resource?: string; user_id?: number }
+  try {
+    payload = JSON.parse(rawBody)
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
   const notificationId = String(payload.id ?? '')
-
-  if (CLIENT_SECRET && !verifyMLSignature(notificationId, xSignature, xRequestId)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   const { topic, resource, user_id } = payload
 
   // Apenas processamos notificações de pedidos
@@ -54,25 +50,28 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminSupabaseClient()
 
-  // Acha integração pelo seller_id
-  const { data: integrations } = await (admin as any)
+  // Cada cliente usa o próprio aplicativo ML: acha a integração pelo seller_id
+  // (user_id da notificação) e valida a assinatura com o client_secret DELA.
+  const { data: integration } = await (admin as any)
     .from('company_integrations')
     .select('id, company_id, config')
     .eq('type', 'mercado_livre')
     .eq('is_active', true)
-
-  const integration = (integrations ?? []).find((i: any) => {
-    const cfg = i.config as Record<string, unknown>
-    return String(cfg.seller_id) === String(user_id)
-  })
+    .eq('config->>seller_id', String(user_id))
+    .maybeSingle()
 
   if (!integration) return NextResponse.json({ ok: true })
 
   const { id: integrationId, company_id: companyId, config } = integration
   const cfg = config as Record<string, unknown>
 
+  const clientSecret = typeof cfg.client_secret === 'string' ? cfg.client_secret : ''
+  if (!verifyMLSignature(clientSecret, notificationId, xSignature, xRequestId)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   // Busca detalhes do pedido via API ML
-  const accessToken = cfg.access_token as string | undefined
+  const accessToken = (cfg.access_token ?? cfg.token) as string | undefined
   if (!accessToken) return NextResponse.json({ ok: true })
 
   const orderId = resource.replace('/orders/', '').replace(/\//g, '')
