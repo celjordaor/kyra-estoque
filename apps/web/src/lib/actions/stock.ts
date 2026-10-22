@@ -1,5 +1,6 @@
 'use server'
 
+import { fireEvent } from '@/lib/automations/engine'
 import { revalidatePath } from 'next/cache'
 import { completeCheckpoint } from '@/lib/actions/onboarding'
 import { createNotification } from '@/lib/actions/notifications'
@@ -226,6 +227,9 @@ export async function createStockMovement(values: {
         body: `Estoque atual (${newQty}) atingiu o mínimo configurado (${minStock}). Considere reabastecer.`,
         actionUrl: '/stock',
         metadata: { product_id: values.product_id, current_qty: newQty, min_stock: minStock },
+      }).catch(() => {})
+      fireEvent(companyId, {
+        type: 'low_stock', productId: values.product_id, name: product.name as string, qty: newQty, min: minStock,
       }).catch(() => {})
     }
     return { success: true }

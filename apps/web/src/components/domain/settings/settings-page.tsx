@@ -1843,18 +1843,6 @@ const INTEGRATION_DEFS = [
     ],
     docsUrl: 'https://docs.asaas.com',
   },
-  {
-    type: 'whatsapp' as IntegrationType,
-    label: 'WhatsApp',
-    description: 'Envio de notificações e atendimento via WhatsApp',
-    icon: MessageCircle,
-    color: 'text-success',
-    fields: [
-      { key: 'instance_id', label: 'Instance ID', placeholder: 'instance_xxx', secret: false },
-      { key: 'token', label: 'Token', placeholder: 'Bearer token...', secret: true },
-    ],
-    docsUrl: 'https://evolution-api.com/docs',
-  },
 ]
 
 function IntegrationCard({
@@ -1994,6 +1982,11 @@ function IntegrationsSection() {
       <div className="p-4 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
         Mercado Livre, Shopify e WooCommerce (canais de venda) são conectados em{' '}
         <Link href="/channels" className="text-primary hover:underline">Canais de venda</Link>.
+      </div>
+      <div className="p-4 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+        O WhatsApp da Kyra não precisa de conexão: cadastre e confirme seu celular em{' '}
+        <Link href="/profile" className="text-primary hover:underline">Meu perfil</Link>{' '}
+        para receber avisos e alertas e conversar com a Kyra pelo número oficial.
       </div>
       {INTEGRATION_DEFS.map(def => (
         <IntegrationCard

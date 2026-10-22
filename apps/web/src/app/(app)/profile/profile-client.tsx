@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { updateProfile, changePassword } from '@/lib/actions/security'
+import { WhatsappPhoneCard } from './whatsapp-phone-card'
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Proprietário',
@@ -21,10 +22,14 @@ export function ProfileClient({
   email,
   fullName: initialName,
   role,
+  phone,
+  phoneVerified,
 }: {
   email: string
   fullName: string
   role: string | null
+  phone: string | null
+  phoneVerified: boolean
 }) {
   // ── Nome ─────────────────────────────────────────────────────
   const [name, setName] = React.useState(initialName)
@@ -106,6 +111,8 @@ export function ProfileClient({
           </div>
         </form>
       </section>
+
+      <WhatsappPhoneCard initialPhone={phone} initialVerified={phoneVerified} />
 
       {/* ── Alterar senha ──────────────────────────────────────── */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">

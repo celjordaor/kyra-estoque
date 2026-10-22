@@ -1,5 +1,6 @@
 'use server'
 
+import { fireEvent } from '@/lib/automations/engine'
 import { completeCheckpoint } from '@/lib/actions/onboarding'
 import { createNotification } from '@/lib/actions/notifications'
 import { cookies } from 'next/headers'
@@ -441,6 +442,10 @@ export async function createSale(input: CreateSaleInput): Promise<{ id: string; 
       : `Venda de R$ ${total_amount.toFixed(2).replace('.', ',')} finalizada`,
     actionUrl: `/sales/${sale.id}`,
     metadata: { sale_id: sale.id, sale_number: sale.sale_number },
+  }).catch(() => {})
+  fireEvent(companyId, {
+    type: 'sale_happened', saleId: sale.id, saleNumber: sale.sale_number,
+    total: total_amount, customerName: input.customer_name ?? null,
   }).catch(() => {})
   return { id: sale.id, sale_number: sale.sale_number }
 }

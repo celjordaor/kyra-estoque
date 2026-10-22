@@ -15,16 +15,18 @@ export default async function ProfilePage() {
   const admin = createAdminSupabaseClient()
   const { data: profileData } = await admin
     .from('profiles')
-    .select('full_name, role, avatar_url')
+    .select('full_name, role, avatar_url, phone, phone_verified_at')
     .eq('id', user.id)
     .single()
-  const profile = profileData as { full_name: string | null; role: string | null; avatar_url: string | null } | null
+  const profile = profileData as { full_name: string | null; role: string | null; avatar_url: string | null; phone: string | null; phone_verified_at: string | null } | null
 
   return (
     <ProfileClient
       email={user.email ?? ''}
       fullName={profile?.full_name ?? ''}
       role={profile?.role ?? null}
+      phone={profile?.phone ?? null}
+      phoneVerified={!!profile?.phone_verified_at}
     />
   )
 }

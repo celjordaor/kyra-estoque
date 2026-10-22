@@ -24,7 +24,7 @@ async function getServerContext() {
     .single()
   const profile = profileData as { company_id: string | null; email: string | null } | null
   if (!profile?.company_id) throw new Error('Empresa não encontrada')
-  return { supabase, admin, companyId: profile.company_id as string, userEmail: profile.email as string }
+  return { supabase, admin, companyId: profile.company_id as string, userEmail: profile.email as string, userId: user.id }
 }
 
 // ── Get all automations ───────────────────────────────────────
@@ -47,7 +47,7 @@ export async function createAutomation(
   title: string,
 ): Promise<{ success: boolean; error?: string; upgradeRequired?: boolean; limit?: number | null }> {
   try {
-    const { supabase, companyId } = await getServerContext()
+    const { supabase, companyId, userId } = await getServerContext()
 
     const { count: currentEnabled } = await (supabase as any)
       .from('company_automations')
@@ -64,7 +64,7 @@ export async function createAutomation(
     const { error } = await (supabase as any)
       .from('company_automations')
       .upsert(
-        { company_id: companyId, automation_type: trigger, title, action_type: action, recipient_type: recipient, enabled: true },
+        { company_id: companyId, automation_type: trigger, title, action_type: action, recipient_type: recipient, enabled: true, created_by: userId },
         { onConflict: 'company_id,automation_type' }
       )
 
@@ -194,10 +194,10 @@ export async function triggerAutomation(
 
     if (automationType === 'low_stock') {
       const { data: products } = await (supabase as any)
-        .from('products').select('name, current_stock, min_stock')
-        .eq('company_id', companyId).filter('current_stock', 'lte', 'min_stock').limit(10)
-      const list = (products ?? []).map((p: { name: string; current_stock: number; min_stock: number }) =>
-        `• <strong>${p.name}</strong>: ${p.current_stock} un (mínimo: ${p.min_stock})`).join('<br>')
+        .from('products').select('name, stock_quantity, min_stock')
+        .eq('company_id', companyId).gt('min_stock', 0).limit(500)
+      const list = (products ?? []).filter((p: { stock_quantity: number; min_stock: number }) => p.stock_quantity <= p.min_stock).slice(0, 10).map((p: { name: string; stock_quantity: number; min_stock: number }) =>
+        `• <strong>${p.name}</strong>: ${p.stock_quantity} un (mínimo: ${p.min_stock})`).join('<br>')
       subject = '⚠️ Alerta: produtos com estoque baixo'
       bodyLines = ['Os seguintes produtos atingiram o estoque mínimo:', list || '(nenhum produto identificado)', 'Acesse o Kyra Estoque para criar uma ordem de compra.']
     } else if (automationType === 'no_sales' || automationType === 'slow_moving') {
