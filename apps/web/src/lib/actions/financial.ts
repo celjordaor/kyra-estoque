@@ -3,7 +3,6 @@
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 import { hasFeature } from '@kyra/business-rules'
-import { getTenantBillingProvider, ASAAS_NOT_CONNECTED } from '@/lib/billing/tenant-billing'
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -189,34 +188,8 @@ export async function createTransaction(data: {
   category?: string
   reference_id?: string
   reference_type?: 'sale' | 'purchase' | 'manual'
-  generate_charge?: boolean
-  billing_type?: 'BOLETO' | 'PIX'
-  customer_asaas_id?: string
-}): Promise<{ data?: FinancialTransaction; charge?: { bankSlipUrl?: string; pixCopyPaste?: string }; error?: string }> {
+}): Promise<{ data?: FinancialTransaction; error?: string }> {
   const { supabase, companyId } = await assertFinancialEnabled()
-
-  let providerChargeId: string | undefined
-  let chargeResult: { bankSlipUrl?: string; pixCopyPaste?: string } | undefined
-
-  if (data.generate_charge && data.type === 'receivable' && data.customer_asaas_id) {
-    const provider = await getTenantBillingProvider(createAdminSupabaseClient(), companyId)
-    if (!provider) return { error: ASAAS_NOT_CONNECTED }
-    try {
-      const result = await provider.createCharge({
-        customerId: data.customer_asaas_id,
-        description: data.description,
-        amountCents: data.amount_cents,
-        dueDate: data.due_date,
-        billingType: data.billing_type ?? 'PIX',
-        externalReference: companyId,
-      })
-      providerChargeId = result.chargeId
-      chargeResult = { bankSlipUrl: result.bankSlipUrl, pixCopyPaste: result.pixCopyPaste }
-    } catch (e) {
-      console.error('[financial] Asaas charge error:', e)
-      return { error: 'Não foi possível gerar a cobrança no Asaas. Verifique a chave em Integrações.' }
-    }
-  }
 
   const { data: tx, error } = await (supabase as any)
     .from('financial_transactions')
@@ -230,13 +203,12 @@ export async function createTransaction(data: {
       category: data.category,
       reference_id: data.reference_id,
       reference_type: data.reference_type ?? 'manual',
-      provider_charge_id: providerChargeId,
     })
     .select()
     .single()
 
   if (error) return { error: (error as any).message ?? String(error) }
-  return { data: tx as FinancialTransaction, charge: chargeResult }
+  return { data: tx as FinancialTransaction }
 }
 
 // ── markAsPaid ────────────────────────────────────────────────────────────────
@@ -258,22 +230,6 @@ export async function markAsPaid(transactionId: string, paidAt?: string): Promis
 
 export async function cancelTransaction(transactionId: string): Promise<{ error?: string }> {
   const { supabase, companyId } = await assertFinancialEnabled()
-
-  const { data: tx } = await (supabase as any)
-    .from('financial_transactions')
-    .select('provider_charge_id')
-    .eq('id', transactionId)
-    .eq('company_id', companyId)
-    .single()
-
-  if (tx?.provider_charge_id) {
-    try {
-      const provider = await getTenantBillingProvider(createAdminSupabaseClient(), companyId)
-      if (provider) await provider.cancelCharge(tx.provider_charge_id)
-    } catch (e) {
-      console.error('[financial] Asaas cancel error:', e)
-    }
-  }
 
   const { error } = await (supabase as any)
     .from('financial_transactions')

@@ -471,9 +471,6 @@ function TransacoesTab({
                 <tr key={row.id} className={cn('border-b hover:bg-muted/20', overdue && row.status !== 'canceled' && 'bg-danger/5')}>
                   <Td>
                     <span className="font-medium">{row.description}</span>
-                    {row.provider_charge_id && (
-                      <span className="ml-2 text-xs text-muted-foreground">(Asaas)</span>
-                    )}
                   </Td>
                   <Td>{row.category ?? <span className="text-muted-foreground">—</span>}</Td>
                   <Td right className="font-semibold">

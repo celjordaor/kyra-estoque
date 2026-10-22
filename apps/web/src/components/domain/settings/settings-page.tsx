@@ -36,7 +36,6 @@ import {
 } from '@/lib/actions/team'
 import { PERMISSION_GROUPS } from '@/lib/actions/team-constants'
 import { getKyraConfig, updateKyraConfig, type KyraConfig } from '@/lib/actions/intelligence'
-import { getIntegrations, upsertIntegration, type Integration, type IntegrationType } from '@/lib/actions/integrations'
 import { changePassword } from '@/lib/actions/security'
 import type { CouponRow, CouponInput } from '@/lib/actions/coupons'
 import type { CategoryRow, BrandRow } from '@kyra/database'
@@ -57,7 +56,7 @@ const OVERVIEW_CARDS: { id: Section; label: string; description: string; icon: R
   { id: 'operation', label: 'Operação', description: 'Estoque, descontos, categorias e marcas', icon: Settings2 },
   { id: 'users', label: 'Usuários', description: 'Gerencie os membros da equipe', icon: Users },
   { id: 'profiles', label: 'Perfis e permissões', description: 'Controle de acesso por função', icon: Shield },
-  { id: 'integrations', label: 'Integrações', description: 'WhatsApp, e-mail, Asaas e mais', icon: Link2 },
+  { id: 'integrations', label: 'Integrações', description: 'Canais de venda e WhatsApp', icon: Link2 },
   { id: 'intelligence', label: 'Inteligência', description: 'Configure o comportamento da Kyra', icon: Brain },
   { id: 'subscription', label: 'Assinatura', description: 'Plano atual, uso e faturamento', icon: CreditCard },
   { id: 'security', label: 'Segurança', description: 'Senha, autenticação e auditoria', icon: Lock },
@@ -1829,154 +1828,7 @@ function IntelligenceSection() {
 }
 
 // ── Integrations Section ───────────────────────────────────────
-const INTEGRATION_DEFS = [
-  {
-    type: 'asaas' as IntegrationType,
-    label: 'Asaas',
-    description: 'Sua conta Asaas — cobranças, Pix e boletos dos seus clientes',
-    icon: CreditCard,
-    color: 'text-blue-500',
-    fields: [
-      { key: 'api_key', label: 'Chave de API (da sua conta Asaas)', placeholder: '$aact_xxxx...', secret: true },
-      { key: 'environment', label: 'Ambiente', placeholder: '', secret: false,
-        options: [{ value: 'sandbox', label: 'Sandbox (testes)' }, { value: 'production', label: 'Produção' }] },
-    ],
-    docsUrl: 'https://docs.asaas.com',
-  },
-]
-
-function IntegrationCard({
-  def,
-  integration,
-  onSave,
-}: {
-  def: typeof INTEGRATION_DEFS[number]
-  integration?: Integration
-  onSave: (type: IntegrationType, config: Record<string, string>, active: boolean) => Promise<void>
-}) {
-  const [open, setOpen] = React.useState(false)
-  const [config, setConfig] = React.useState<Record<string, string>>(integration?.config ?? {})
-  const [active, setActive] = React.useState(integration?.is_active ?? false)
-  const [saving, setSaving] = React.useState(false)
-  const [showSecrets, setShowSecrets] = React.useState<Record<string, boolean>>({})
-  const Icon = def.icon
-  const isConnected = !!integration
-
-  async function handleSave() {
-    setSaving(true)
-    await onSave(def.type, config, active)
-    setSaving(false)
-    setOpen(false)
-  }
-
-  return (
-    <div className="p-4 rounded-xl border border-border bg-card">
-      <div className="flex items-start gap-3">
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted", def.color)}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-medium text-sm">{def.label}</p>
-            {isConnected && active && <Badge variant="success" className="text-xs">Conectado</Badge>}
-            {isConnected && !active && <Badge variant="neutral" className="text-xs">Inativo</Badge>}
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{def.description}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {isConnected && (
-            <Switch checked={active} onCheckedChange={async (v) => {
-              setActive(v)
-              await onSave(def.type, config, v)
-            }} />
-          )}
-          <Button variant="outline" size="sm" onClick={() => setOpen(o => !o)}>
-            {open ? 'Fechar' : (isConnected ? 'Editar' : 'Conectar')}
-          </Button>
-        </div>
-      </div>
-
-      {open && (
-        <div className="mt-4 pt-4 border-t space-y-3">
-          {def.fields.map(field => (
-            <FormField key={field.key} id={field.key} label={field.label}>
-              {'options' in field && field.options ? (
-                <select
-                  value={config[field.key] ?? field.options[0]?.value ?? ''}
-                  onChange={e => setConfig(prev => ({ ...prev, [field.key]: e.target.value }))}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                >
-                  {field.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              ) : (
-              <div className="relative">
-                <Input
-                  type={field.secret && !showSecrets[field.key] ? 'password' : 'text'}
-                  value={config[field.key] ?? ''}
-                  onChange={e => setConfig(prev => ({ ...prev, [field.key]: e.target.value }))}
-                  placeholder={field.placeholder}
-                  className={field.secret ? 'pr-9' : ''}
-                />
-                {field.secret && (
-                  <button
-                    type="button"
-                    onClick={() => setShowSecrets(prev => ({ ...prev, [field.key]: !prev[field.key] }))}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showSecrets[field.key] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  </button>
-                )}
-              </div>
-              )}
-            </FormField>
-          ))}
-          {def.type === 'asaas' && integration?.config.webhook_url && (
-            <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs space-y-2">
-              <p className="font-medium text-foreground">Cadastre no painel do Asaas (Integrações → Webhooks) para receber o status dos pagamentos:</p>
-              <p><span className="text-muted-foreground">URL:</span> <code className="break-all">{integration.config.webhook_url}</code></p>
-              {integration.config.webhook_token && (
-                <p><span className="text-muted-foreground">Token de autenticação:</span> <code className="break-all">{integration.config.webhook_token}</code></p>
-              )}
-            </div>
-          )}
-          <div className="flex items-center justify-between pt-2">
-            <a href={def.docsUrl} target="_blank" rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-              <ExternalLink className="h-3 w-3" /> Documentação
-            </a>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                {saving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : 'Salvar'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function IntegrationsSection() {
-  const [integrations, setIntegrations] = React.useState<Integration[]>([])
-  const [loading, setLoading] = React.useState(true)
-
-  React.useEffect(() => {
-    getIntegrations().then(d => { setIntegrations(d); setLoading(false) })
-  }, [])
-
-  async function handleSave(type: IntegrationType, config: Record<string, string>, is_active: boolean) {
-    const res = await upsertIntegration(type, config, is_active)
-    if (res.success) {
-      toast.success('Integração salva')
-      getIntegrations().then(setIntegrations)
-    } else {
-      toast.error(res.error ?? 'Erro ao salvar')
-    }
-  }
-
-  if (loading) return <SectionCard><div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Carregando...</div></SectionCard>
-
   return (
     <div className="space-y-3">
       <div className="p-4 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
@@ -1988,14 +1840,6 @@ function IntegrationsSection() {
         <Link href="/profile" className="text-primary hover:underline">Meu perfil</Link>{' '}
         para receber avisos e alertas e conversar com a Kyra pelo número oficial.
       </div>
-      {INTEGRATION_DEFS.map(def => (
-        <IntegrationCard
-          key={def.type}
-          def={def}
-          integration={integrations.find(i => i.type === def.type)}
-          onSave={handleSave}
-        />
-      ))}
     </div>
   )
 }
