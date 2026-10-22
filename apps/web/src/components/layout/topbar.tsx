@@ -79,7 +79,7 @@ function NotificationBell({ initialCount }: { initialCount: number }) {
       setCount(prev => Math.max(0, prev - 1))
     }
     if (notif.actionUrl) {
-      router.push(notif.actionUrl)
+      router.push(notif.actionUrl as never)
       setOpen(false)
     }
   }

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import * as React from 'react'
 import {
   Building2, Settings2, Users, Shield, Link2, Brain, CreditCard, Lock,
@@ -1667,7 +1668,7 @@ function CompanySection() {
       <div className="h-px bg-border my-6" />
       <p className="text-xs text-muted-foreground">
         Dados fiscais (IE, CRT, CNAE, endereço do emitente) são configurados em{' '}
-        <a href="/fiscal/configuracoes" className="text-primary hover:underline">Fiscal → Configurações</a>.
+        <Link href="/fiscal" className="text-primary hover:underline">Fiscal → Configurações</Link>.
       </p>
 
       <div className="flex justify-end mt-6">

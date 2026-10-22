@@ -35,16 +35,32 @@ export type NotificationType =
 
 export interface Notification {
   id: string
-  company_id: string
-  user_id: string | null
+  companyId: string
+  userId: string | null
   type: NotificationType
   title: string
   body: string | null
-  action_url: string | null
+  actionUrl: string | null
   metadata: Record<string, unknown> | null
   read: boolean
-  read_at: string | null
-  created_at: string
+  readAt: string | null
+  createdAt: string
+}
+
+function mapRow(r: any): Notification {
+  return {
+    id: r.id,
+    companyId: r.company_id,
+    userId: r.user_id ?? null,
+    type: r.type,
+    title: r.title,
+    body: r.body ?? null,
+    actionUrl: r.action_url ?? null,
+    metadata: r.metadata ?? null,
+    read: !!r.read,
+    readAt: r.read_at ?? null,
+    createdAt: r.created_at,
+  }
 }
 
 // ── Leitura ───────────────────────────────────────────────────────────────────
@@ -65,7 +81,7 @@ export async function getNotifications(limit = 20): Promise<Notification[]> {
       console.error('[notifications] getNotifications error:', error.message)
       return []
     }
-    return (data ?? []) as Notification[]
+    return ((data ?? []) as any[]).map(mapRow)
   } catch {
     return []
   }
