@@ -74,7 +74,7 @@ async function deliver(admin: Admin, a: Automation, content: Content, triggeredB
       result.emails = emails.length
     } else if (action === 'notification') {
       await createNotification({
-        companyId: a.company_id, type: 'automation', title: content.subject,
+        companyId: a.company_id, type: 'automation_triggered', title: content.subject,
         body: plain.join(' · ').slice(0, 500), actionUrl: '/automations', metadata: { automation_id: a.id },
       })
       result.notification = true

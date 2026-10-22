@@ -5,7 +5,7 @@ import { createNotification } from '@/lib/actions/notifications'
 
 export async function notifyBilling(admin: any, companyId: string, notice: BillingNotice): Promise<void> {
   await createNotification({
-    companyId, type: 'billing', title: notice.title, body: notice.body,
+    companyId, type: 'payment_event', title: notice.title, body: notice.body,
     actionUrl: '/subscribe', metadata: { kind: notice.kind },
   })
   const key = process.env.RESEND_API_KEY
