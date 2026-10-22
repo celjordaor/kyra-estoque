@@ -7,7 +7,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, Tag, Bookmark,
   ToggleLeft, BadgePercent, User,
   CheckCircle2, XCircle, Crown, Zap, Star, AlertCircle, Clock, UserMinus, ChevronDown, UserPlus, Copy,
-  Key, Wifi, WifiOff, Globe, MessageCircle, ShoppingBag, Bot, Sliders, Sparkles, Eye, EyeOff, ExternalLink, RefreshCw,
+  Key, Wifi, WifiOff, MessageCircle, Bot, Sliders, Sparkles, Eye, EyeOff, ExternalLink, RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -1833,10 +1833,14 @@ const INTEGRATION_DEFS = [
   {
     type: 'asaas' as IntegrationType,
     label: 'Asaas',
-    description: 'Gateway de pagamento — cobranças, Pix e boletos',
+    description: 'Sua conta Asaas — cobranças, Pix e boletos dos seus clientes',
     icon: CreditCard,
     color: 'text-blue-500',
-    fields: [{ key: 'api_key', label: 'API Key', placeholder: '$aact_xxxx...', secret: true }],
+    fields: [
+      { key: 'api_key', label: 'Chave de API (da sua conta Asaas)', placeholder: '$aact_xxxx...', secret: true },
+      { key: 'environment', label: 'Ambiente', placeholder: '', secret: false,
+        options: [{ value: 'sandbox', label: 'Sandbox (testes)' }, { value: 'production', label: 'Produção' }] },
+    ],
     docsUrl: 'https://docs.asaas.com',
   },
   {
@@ -1850,43 +1854,6 @@ const INTEGRATION_DEFS = [
       { key: 'token', label: 'Token', placeholder: 'Bearer token...', secret: true },
     ],
     docsUrl: 'https://evolution-api.com/docs',
-  },
-  {
-    type: 'shopify' as IntegrationType,
-    label: 'Shopify',
-    description: 'Sincronize produtos e pedidos da sua loja Shopify',
-    icon: ShoppingBag,
-    color: 'text-primary',
-    fields: [
-      { key: 'store_url', label: 'URL da loja', placeholder: 'minha-loja.myshopify.com', secret: false },
-      { key: 'api_key', label: 'API Key', placeholder: 'shpat_xxxx', secret: true },
-    ],
-    docsUrl: 'https://shopify.dev/docs/api',
-  },
-  {
-    type: 'mercadolivre' as IntegrationType,
-    label: 'Mercado Livre',
-    description: 'Sincronize produtos e pedidos do Mercado Livre',
-    icon: Globe,
-    color: 'text-yellow-500',
-    fields: [
-      { key: 'app_id', label: 'App ID', placeholder: '1234567890', secret: false },
-      { key: 'client_secret', label: 'Client Secret', placeholder: 'xxxxx', secret: true },
-    ],
-    docsUrl: 'https://developers.mercadolivre.com.br',
-  },
-  {
-    type: 'woocommerce' as IntegrationType,
-    label: 'WooCommerce',
-    description: 'Sincronize produtos e pedidos do seu site WooCommerce',
-    icon: Globe,
-    color: 'text-purple-500',
-    fields: [
-      { key: 'store_url', label: 'URL da loja', placeholder: 'https://minha-loja.com', secret: false },
-      { key: 'consumer_key', label: 'Consumer Key', placeholder: 'ck_xxxx', secret: false },
-      { key: 'consumer_secret', label: 'Consumer Secret', placeholder: 'cs_xxxx', secret: true },
-    ],
-    docsUrl: 'https://woocommerce.com/document/woocommerce-rest-api',
   },
 ]
 
@@ -1945,6 +1912,15 @@ function IntegrationCard({
         <div className="mt-4 pt-4 border-t space-y-3">
           {def.fields.map(field => (
             <FormField key={field.key} id={field.key} label={field.label}>
+              {'options' in field && field.options ? (
+                <select
+                  value={config[field.key] ?? field.options[0]?.value ?? ''}
+                  onChange={e => setConfig(prev => ({ ...prev, [field.key]: e.target.value }))}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                >
+                  {field.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : (
               <div className="relative">
                 <Input
                   type={field.secret && !showSecrets[field.key] ? 'password' : 'text'}
@@ -1963,8 +1939,18 @@ function IntegrationCard({
                   </button>
                 )}
               </div>
+              )}
             </FormField>
           ))}
+          {def.type === 'asaas' && integration?.config.webhook_url && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs space-y-2">
+              <p className="font-medium text-foreground">Cadastre no painel do Asaas (Integrações → Webhooks) para receber o status dos pagamentos:</p>
+              <p><span className="text-muted-foreground">URL:</span> <code className="break-all">{integration.config.webhook_url}</code></p>
+              {integration.config.webhook_token && (
+                <p><span className="text-muted-foreground">Token de autenticação:</span> <code className="break-all">{integration.config.webhook_token}</code></p>
+              )}
+            </div>
+          )}
           <div className="flex items-center justify-between pt-2">
             <a href={def.docsUrl} target="_blank" rel="noopener noreferrer"
               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
@@ -2005,6 +1991,10 @@ function IntegrationsSection() {
 
   return (
     <div className="space-y-3">
+      <div className="p-4 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+        Mercado Livre, Shopify e WooCommerce (canais de venda) são conectados em{' '}
+        <Link href="/channels" className="text-primary hover:underline">Canais de venda</Link>.
+      </div>
       {INTEGRATION_DEFS.map(def => (
         <IntegrationCard
           key={def.type}

@@ -1,6 +1,7 @@
 export type { BillingProvider, CustomerData, ChargeData, ChargeResult,
   SubscriptionData, PlanData, WebhookResult } from './billing-provider'
-export { AsaasAdapter } from './asaas-adapter'
+export { AsaasAdapter, ASAAS_SANDBOX_URL, ASAAS_PRODUCTION_URL } from './asaas-adapter'
+export type { AsaasCredentials } from './asaas-adapter'
 export { MockAdapter } from './mock-adapter'
 
 import { AsaasAdapter } from './asaas-adapter'

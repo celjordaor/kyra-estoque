@@ -6,17 +6,22 @@ import type {
   SubscriptionData, PlanData, WebhookResult,
 } from './billing-provider'
 
-const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL ?? 'https://sandbox.asaas.com/api/v3'
+export const ASAAS_SANDBOX_URL = 'https://sandbox.asaas.com/api/v3'
+export const ASAAS_PRODUCTION_URL = 'https://api.asaas.com/v3'
 
-async function asaasFetch(path: string, options: RequestInit = {}) {
-  const apiKey = process.env.ASAAS_API_KEY
-  if (!apiKey) throw new Error('ASAAS_API_KEY não configurado')
+export interface AsaasCredentials {
+  apiKey: string
+  baseUrl: string
+}
 
-  const res = await fetch(`${ASAAS_BASE_URL}${path}`, {
+async function asaasRequest(creds: AsaasCredentials, path: string, options: RequestInit = {}) {
+  if (!creds.apiKey) throw new Error('Chave de API do Asaas não configurada')
+
+  const res = await fetch(`${creds.baseUrl}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'access_token': apiKey,
+      'access_token': creds.apiKey,
       ...(options.headers ?? {}),
     },
   })
@@ -49,8 +54,21 @@ function mapStatus(asaasStatus: string): ChargeResult['status'] {
 }
 
 export class AsaasAdapter implements BillingProvider {
+  private readonly creds: AsaasCredentials
+
+  /**
+   * Sem argumento: usa a conta do próprio Kyra (env ASAAS_API_KEY / ASAAS_BASE_URL).
+   * Com credenciais: usa a conta Asaas do cliente (tenant).
+   */
+  constructor(creds?: AsaasCredentials) {
+    this.creds = creds ?? {
+      apiKey: process.env.ASAAS_API_KEY ?? '',
+      baseUrl: process.env.ASAAS_BASE_URL ?? ASAAS_SANDBOX_URL,
+    }
+  }
+
   async createCustomer(data: CustomerData): Promise<string> {
-    const res = await asaasFetch('/customers', {
+    const res = await asaasRequest(this.creds, '/customers', {
       method: 'POST',
       body: JSON.stringify({
         name: data.name,
@@ -70,7 +88,7 @@ export class AsaasAdapter implements BillingProvider {
   }
 
   async getCustomer(customerId: string): Promise<CustomerData & { id: string }> {
-    const res = await asaasFetch(`/customers/${customerId}`)
+    const res = await asaasRequest(this.creds, `/customers/${customerId}`)
     return {
       id: res.id,
       name: res.name,
@@ -81,7 +99,7 @@ export class AsaasAdapter implements BillingProvider {
   }
 
   async createCharge(data: ChargeData): Promise<ChargeResult> {
-    const res = await asaasFetch('/payments', {
+    const res = await asaasRequest(this.creds, '/payments', {
       method: 'POST',
       body: JSON.stringify({
         customer: data.customerId,
@@ -107,7 +125,7 @@ export class AsaasAdapter implements BillingProvider {
   }
 
   async getCharge(chargeId: string): Promise<ChargeResult> {
-    const res = await asaasFetch(`/payments/${chargeId}`)
+    const res = await asaasRequest(this.creds, `/payments/${chargeId}`)
     return {
       chargeId: res.id,
       status: mapStatus(res.status),
@@ -120,12 +138,12 @@ export class AsaasAdapter implements BillingProvider {
   }
 
   async cancelCharge(chargeId: string): Promise<void> {
-    await asaasFetch(`/payments/${chargeId}`, { method: 'DELETE' })
+    await asaasRequest(this.creds, `/payments/${chargeId}`, { method: 'DELETE' })
   }
 
   async createSubscription(data: SubscriptionData): Promise<string> {
     const cycle = data.billingInterval === 'YEARLY' ? 'YEARLY' : 'MONTHLY'
-    const res = await asaasFetch('/subscriptions', {
+    const res = await asaasRequest(this.creds, '/subscriptions', {
       method: 'POST',
       body: JSON.stringify({
         customer: data.customerId,
@@ -140,7 +158,7 @@ export class AsaasAdapter implements BillingProvider {
   }
 
   async changeSubscription(subscriptionId: string, planData: PlanData): Promise<void> {
-    await asaasFetch(`/subscriptions/${subscriptionId}`, {
+    await asaasRequest(this.creds, `/subscriptions/${subscriptionId}`, {
       method: 'PUT',
       body: JSON.stringify({
         value: planData.amountCents / 100,
@@ -150,7 +168,7 @@ export class AsaasAdapter implements BillingProvider {
   }
 
   async cancelSubscription(subscriptionId: string): Promise<void> {
-    await asaasFetch(`/subscriptions/${subscriptionId}`, { method: 'DELETE' })
+    await asaasRequest(this.creds, `/subscriptions/${subscriptionId}`, { method: 'DELETE' })
   }
 
   async handleWebhook(payload: unknown): Promise<WebhookResult> {

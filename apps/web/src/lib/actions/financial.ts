@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@kyra/database'
 import { hasFeature } from '@kyra/business-rules'
-import { getBillingProvider } from '@kyra/business-rules'
+import { getTenantBillingProvider, ASAAS_NOT_CONNECTED } from '@/lib/billing/tenant-billing'
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -199,8 +199,9 @@ export async function createTransaction(data: {
   let chargeResult: { bankSlipUrl?: string; pixCopyPaste?: string } | undefined
 
   if (data.generate_charge && data.type === 'receivable' && data.customer_asaas_id) {
+    const provider = await getTenantBillingProvider(createAdminSupabaseClient(), companyId)
+    if (!provider) return { error: ASAAS_NOT_CONNECTED }
     try {
-      const provider = getBillingProvider()
       const result = await provider.createCharge({
         customerId: data.customer_asaas_id,
         description: data.description,
@@ -213,6 +214,7 @@ export async function createTransaction(data: {
       chargeResult = { bankSlipUrl: result.bankSlipUrl, pixCopyPaste: result.pixCopyPaste }
     } catch (e) {
       console.error('[financial] Asaas charge error:', e)
+      return { error: 'Não foi possível gerar a cobrança no Asaas. Verifique a chave em Integrações.' }
     }
   }
 
@@ -266,8 +268,8 @@ export async function cancelTransaction(transactionId: string): Promise<{ error?
 
   if (tx?.provider_charge_id) {
     try {
-      const provider = getBillingProvider()
-      await provider.cancelCharge(tx.provider_charge_id)
+      const provider = await getTenantBillingProvider(createAdminSupabaseClient(), companyId)
+      if (provider) await provider.cancelCharge(tx.provider_charge_id)
     } catch (e) {
       console.error('[financial] Asaas cancel error:', e)
     }
